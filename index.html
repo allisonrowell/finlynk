@@ -1,0 +1,920 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FinLYNK — Decode the Word Problem</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0A0E17; --panel:#121826; --panel2:#1A2235; --line:rgba(255,255,255,.07);
+  --text:#E8ECF5; --sub:#8B95A8; --dim:#5A6478;
+  --accent:#5B8DEF; --accent2:#4A7BD8;
+  --green:#26A69A; --greenL:#4DD0C4; --red:#EF5350; --redL:#FF7B78;
+  --gold:#F5B82E; --purple:#9B7BF0; --teal:#2DD4BF;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{
+  font-family:'Inter',-apple-system,sans-serif;
+  background:var(--bg);color:var(--text);
+  min-height:100vh;overflow-x:hidden;font-size:15px;line-height:1.5;
+}
+#app{min-height:100vh;display:flex;flex-direction:column}
+
+/* ── Top bar ── */
+.topbar{
+  position:sticky;top:0;z-index:50;
+  display:flex;align-items:center;justify-content:space-between;
+  padding:12px 18px;background:rgba(10,14,23,.9);
+  backdrop-filter:blur(12px);border-bottom:1px solid var(--line);
+}
+.brand{display:flex;align-items:center;gap:9px;font-weight:800;font-size:1.05rem;letter-spacing:-.3px;cursor:pointer}
+.brand .logo{
+  width:28px;height:28px;border-radius:7px;
+  background:linear-gradient(135deg,var(--green),var(--accent));
+  display:flex;align-items:center;justify-content:center;font-size:15px;color:#fff;font-weight:900;
+}
+.brand .x{color:var(--accent)}
+.top-right{display:flex;align-items:center;gap:14px}
+.streak{display:flex;align-items:center;gap:5px;font-size:.85rem;font-weight:700;color:var(--gold)}
+.xp-pill{
+  display:flex;align-items:center;gap:5px;font-size:.82rem;font-weight:700;
+  color:var(--accent);background:rgba(91,141,239,.12);
+  border:1px solid rgba(91,141,239,.25);border-radius:8px;padding:4px 10px;
+}
+
+/* ── Layout ── */
+.wrap{max-width:820px;width:100%;margin:0 auto;padding:22px 18px 80px}
+.fade{animation:fade .35s ease}
+@keyframes fade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+
+/* ── Hero ── */
+.hero{text-align:center;padding:26px 0 14px}
+.hero .kicker{font-size:.72rem;font-weight:800;letter-spacing:2.5px;text-transform:uppercase;color:var(--accent)}
+.hero h1{font-size:2.15rem;font-weight:900;letter-spacing:-1px;margin:10px 0 8px;line-height:1.12}
+.hero p{color:var(--sub);font-size:1.02rem;max-width:540px;margin:0 auto}
+
+/* ── Buttons ── */
+.btn{
+  font-family:'Inter',sans-serif;font-weight:700;font-size:.95rem;
+  border:none;border-radius:11px;padding:13px 22px;cursor:pointer;
+  transition:transform .12s,box-shadow .12s,background .12s;
+  display:inline-flex;align-items:center;justify-content:center;gap:8px;
+}
+.btn:hover{transform:translateY(-2px)}
+.btn:active{transform:translateY(0)}
+.btn-primary{background:var(--accent);color:#fff;box-shadow:0 6px 20px rgba(91,141,239,.3)}
+.btn-primary:hover{background:var(--accent2)}
+.btn-green{background:var(--green);color:#04201D;box-shadow:0 6px 20px rgba(38,166,154,.25)}
+.btn-ghost{background:var(--panel2);color:var(--text);border:1px solid var(--line)}
+.btn-ghost:hover{background:#222c42}
+.btn-sm{padding:8px 14px;font-size:.85rem;border-radius:9px}
+.btn-block{width:100%}
+.btn:disabled{opacity:.4;cursor:not-allowed;transform:none}
+
+/* ── Section label ── */
+.sec-label{font-size:.72rem;font-weight:800;letter-spacing:2px;text-transform:uppercase;color:var(--dim);margin:26px 0 12px}
+
+/* ── Curriculum cards ── */
+.track-grid{display:grid;grid-template-columns:1fr;gap:12px}
+.track-card{
+  background:var(--panel);border:1px solid var(--line);border-radius:14px;
+  padding:16px 18px;display:flex;align-items:center;gap:16px;cursor:pointer;
+  transition:border-color .15s,transform .15s,background .15s;
+}
+.track-card:hover{border-color:rgba(91,141,239,.4);transform:translateX(3px);background:var(--panel2)}
+.track-card.locked{opacity:.5;cursor:not-allowed}
+.track-card.locked:hover{transform:none;border-color:var(--line);background:var(--panel)}
+.track-num{
+  width:44px;height:44px;border-radius:11px;flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;font-size:1.35rem;font-weight:900;
+}
+.track-info{flex:1;min-width:0}
+.track-name{font-weight:800;font-size:1.02rem;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.track-desc{color:var(--sub);font-size:.85rem;margin-top:2px}
+.track-meta{display:flex;align-items:center;gap:6px;font-size:.75rem;color:var(--dim);margin-top:6px}
+.pill{font-size:.66rem;font-weight:800;letter-spacing:.5px;text-transform:uppercase;padding:3px 8px;border-radius:6px}
+.pill-done{background:rgba(38,166,154,.15);color:var(--greenL)}
+.pill-prog{background:rgba(245,184,46,.15);color:var(--gold)}
+.pill-new{background:rgba(91,141,239,.15);color:var(--accent)}
+.pill-soon{background:rgba(255,255,255,.06);color:var(--dim)}
+.track-arrow{color:var(--dim);font-size:1.3rem}
+.mini-prog{height:5px;background:rgba(255,255,255,.08);border-radius:3px;overflow:hidden;margin-top:8px}
+.mini-prog>div{height:100%;background:linear-gradient(90deg,var(--green),var(--accent));border-radius:3px;transition:width .4s}
+
+/* ── Stats row ── */
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:18px}
+.stat{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px;text-align:center}
+.stat .big{font-size:1.6rem;font-weight:900;letter-spacing:-.5px}
+.stat .lbl{font-size:.72rem;color:var(--sub);font-weight:600;margin-top:2px}
+
+/* ── notice banner ── */
+.notice{background:rgba(245,184,46,.08);border:1px solid rgba(245,184,46,.25);border-radius:12px;padding:12px 15px;font-size:.82rem;color:var(--sub);margin-top:18px;line-height:1.5}
+.notice b{color:var(--gold)}
+
+/* ── Lesson / step top ── */
+.lesson-top{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:16px}
+.lesson-top .crumbs{font-size:.82rem;color:var(--sub);font-weight:600}
+.lesson-top .crumbs b{color:var(--text)}
+.prog-line{height:6px;background:rgba(255,255,255,.08);border-radius:4px;overflow:hidden;margin-bottom:6px}
+.prog-line>div{height:100%;background:linear-gradient(90deg,var(--green),var(--accent));border-radius:4px;transition:width .4s}
+.step-dots{display:flex;gap:5px;margin-bottom:20px;flex-wrap:wrap}
+.step-dots .d{width:22px;height:5px;border-radius:3px;background:rgba(255,255,255,.1);cursor:pointer;transition:background .2s}
+.step-dots .d.done{background:var(--green)}
+.step-dots .d.cur{background:var(--accent)}
+
+/* ── Card ── */
+.card{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:22px 22px 20px}
+.card h2{font-size:1.35rem;font-weight:900;letter-spacing:-.4px;margin-bottom:6px}
+.lead{color:var(--gold);font-weight:700;font-size:.92rem;margin-bottom:12px}
+.card p{color:var(--text);margin:10px 0;font-size:.95rem}
+.card p b{color:#fff}
+.card ul{margin:10px 0 10px 4px;list-style:none}
+.card li{color:var(--text);font-size:.93rem;margin:8px 0;padding-left:22px;position:relative}
+.card li:before{content:"→";position:absolute;left:0;color:var(--accent);font-weight:800}
+
+.term-row{display:flex;flex-direction:column;gap:8px;margin:14px 0}
+.term{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:11px 14px;font-size:.9rem}
+.term b{color:var(--accent);font-weight:800}
+
+.concept{margin-top:16px;background:rgba(91,141,239,.08);border:1px solid rgba(91,141,239,.22);border-radius:12px;padding:14px 16px}
+.concept.warn{background:rgba(245,184,46,.08);border-color:rgba(245,184,46,.25)}
+.concept .ct{font-size:.7rem;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;color:var(--accent);margin-bottom:6px}
+.concept.warn .ct{color:var(--gold)}
+.concept p{font-size:.9rem;margin:6px 0}
+
+/* decision tree */
+.tree{margin:16px 0;display:flex;flex-direction:column;gap:10px}
+.tnode{background:var(--panel2);border:1px solid var(--line);border-left:3px solid var(--accent);border-radius:10px;padding:12px 14px}
+.tnode .q{font-weight:800;font-size:.9rem;color:#fff}
+.tnode .a{font-size:.86rem;color:var(--sub);margin-top:5px}
+.tnode .a b{color:var(--greenL)}
+.tnode.g{border-left-color:var(--green)}
+.tnode.gold{border-left-color:var(--gold)}
+.tnode.p{border-left-color:var(--purple)}
+
+/* formula chips reference */
+.fcard{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:11px 14px;margin:8px 0}
+.fcard .fn{font-weight:800;font-size:.85rem;color:var(--greenL);margin-bottom:3px}
+.formula{font-family:'Inter';font-weight:600;font-size:.95rem;color:#fff;letter-spacing:.2px}
+.fcard .xl{font-size:.78rem;color:var(--dim);margin-top:4px;font-family:ui-monospace,Menlo,monospace}
+
+/* nav */
+.nav-row{display:flex;gap:10px;margin-top:20px}
+
+/* ── Quiz ── */
+.quiz-box{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:22px}
+.quiz-q{font-size:1.08rem;font-weight:700;margin-bottom:16px;line-height:1.4}
+.quiz-opts{display:flex;flex-direction:column;gap:10px}
+.opt{display:flex;align-items:center;gap:12px;background:var(--panel2);border:1.5px solid var(--line);border-radius:11px;padding:13px 15px;cursor:pointer;transition:border-color .15s,background .15s;font-size:.93rem}
+.opt:hover{border-color:rgba(91,141,239,.5)}
+.opt .key{width:26px;height:26px;border-radius:7px;background:rgba(255,255,255,.06);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:.8rem;flex-shrink:0}
+.opt.correct{border-color:var(--green);background:rgba(38,166,154,.12)}
+.opt.correct .key{background:var(--green);color:#04201D}
+.opt.wrong{border-color:var(--red);background:rgba(239,83,80,.1)}
+.opt.wrong .key{background:var(--red);color:#fff}
+.opt.dis{cursor:default}
+.explain{margin-top:16px;padding:14px 16px;border-radius:11px;font-size:.9rem;line-height:1.55}
+.explain.ok{background:rgba(38,166,154,.1);border:1px solid rgba(38,166,154,.3);color:var(--greenL)}
+.explain.no{background:rgba(239,83,80,.1);border:1px solid rgba(239,83,80,.3);color:var(--redL)}
+
+/* ════ DECODER ════ */
+.dstage-bar{display:flex;gap:6px;margin-bottom:18px}
+.dstep{flex:1;text-align:center;font-size:.62rem;font-weight:800;letter-spacing:.4px;text-transform:uppercase;color:var(--dim);padding-bottom:8px;border-bottom:2px solid rgba(255,255,255,.08);transition:color .2s,border-color .2s}
+.dstep.active{color:var(--accent);border-color:var(--accent)}
+.dstep.done{color:var(--greenL);border-color:var(--green)}
+
+.ref-tag{display:inline-block;font-size:.66rem;font-weight:800;letter-spacing:.5px;text-transform:uppercase;color:var(--gold);background:rgba(245,184,46,.12);border-radius:6px;padding:3px 9px;margin-bottom:10px}
+.scenario{background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:16px 18px;font-size:.98rem;line-height:1.6;color:#EDF1F8}
+.scenario .num{color:var(--gold);font-weight:800;background:rgba(245,184,46,.1);border-radius:5px;padding:1px 5px}
+.ask{margin-top:14px;font-weight:800;font-size:1rem;color:#fff}
+.ask .qk{color:var(--accent)}
+
+.stage-title{font-size:.72rem;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;color:var(--accent);margin:18px 0 4px}
+.stage-help{color:var(--sub);font-size:.86rem;margin-bottom:14px;line-height:1.5}
+
+/* tag stage */
+.tag-list{display:flex;flex-direction:column;gap:10px}
+.tag-row{display:flex;align-items:center;gap:12px;background:var(--panel2);border:1.5px solid var(--line);border-radius:11px;padding:11px 13px;transition:border-color .2s}
+.tag-row.ok{border-color:var(--green);background:rgba(38,166,154,.08)}
+.tag-row.bad{border-color:var(--red);background:rgba(239,83,80,.08)}
+.tag-num{font-weight:800;font-size:1rem;color:var(--gold);min-width:96px}
+.tag-ctx{font-size:.78rem;color:var(--dim);flex:1;min-width:0}
+.tag-row select{
+  font-family:'Inter';font-weight:700;font-size:.85rem;color:var(--text);
+  background:#0F1522;border:1.5px solid var(--line);border-radius:9px;padding:9px 11px;cursor:pointer;min-width:150px;
+}
+.tag-row select:focus{outline:none;border-color:var(--accent)}
+.mark{font-size:1.05rem;width:20px;text-align:center}
+
+/* formula pick */
+.fpick{display:flex;flex-direction:column;gap:10px}
+.fopt{background:var(--panel2);border:1.5px solid var(--line);border-radius:11px;padding:14px 15px;cursor:pointer;transition:border-color .15s,background .15s}
+.fopt:hover{border-color:rgba(91,141,239,.5)}
+.fopt .formula{font-size:.98rem}
+.fopt .flabel{font-size:.78rem;color:var(--sub);margin-top:4px}
+.fopt.correct{border-color:var(--green);background:rgba(38,166,154,.12)}
+.fopt.wrong{border-color:var(--red);background:rgba(239,83,80,.1)}
+.fopt.dis{cursor:default}
+
+/* plug in */
+.plug{background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:16px 18px;margin-top:4px}
+.plug-formula{font-size:1.05rem;font-weight:700;color:#fff;line-height:2.2;text-align:center}
+.blank{display:inline-block;width:82px;text-align:center;font-family:'Inter';font-weight:800;font-size:.95rem;color:var(--gold);background:#0F1522;border:1.5px solid var(--line);border-radius:8px;padding:6px 4px;margin:0 2px}
+.blank:focus{outline:none;border-color:var(--accent)}
+.blank.ok{border-color:var(--green);color:var(--greenL)}
+.blank.bad{border-color:var(--red);color:var(--redL)}
+.plug-key{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px;justify-content:center}
+.pk{font-size:.75rem;color:var(--sub);background:#0F1522;border:1px solid var(--line);border-radius:7px;padding:5px 10px}
+.pk b{color:var(--greenL)}
+.convert{background:rgba(155,123,240,.08);border:1px solid rgba(155,123,240,.25);border-radius:10px;padding:11px 14px;margin-top:12px;font-size:.83rem;color:#C9BEF5}
+.convert b{color:var(--purple)}
+
+/* solve reveal */
+.solve{display:flex;flex-direction:column;gap:10px}
+.sstep{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:13px 15px;opacity:0;transform:translateY(8px);animation:sIn .4s forwards}
+@keyframes sIn{to{opacity:1;transform:none}}
+.sstep .sn{font-size:.68rem;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:var(--dim);margin-bottom:4px}
+.sstep .sc{font-family:'Inter';font-weight:600;font-size:.95rem;color:#fff}
+.sstep .sr{color:var(--greenL);font-weight:800}
+.answer-box{background:linear-gradient(135deg,rgba(38,166,154,.15),rgba(91,141,239,.12));border:1px solid rgba(38,166,154,.35);border-radius:12px;padding:18px;text-align:center;margin-top:6px}
+.answer-box .albl{font-size:.68rem;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;color:var(--greenL)}
+.answer-box .aval{font-size:1.9rem;font-weight:900;letter-spacing:-.5px;color:#fff;margin:4px 0}
+.meaning{background:rgba(245,184,46,.08);border:1px solid rgba(245,184,46,.22);border-radius:11px;padding:14px 16px;margin-top:12px;font-size:.9rem;line-height:1.55;color:#F0E6CC}
+.meaning .ml{font-size:.68rem;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;color:var(--gold);margin-bottom:6px}
+
+.feedback{margin-top:14px;padding:12px 15px;border-radius:11px;font-size:.88rem;line-height:1.5;display:none}
+.feedback.show{display:block}
+.feedback.ok{background:rgba(38,166,154,.1);border:1px solid rgba(38,166,154,.3);color:var(--greenL)}
+.feedback.no{background:rgba(239,83,80,.1);border:1px solid rgba(239,83,80,.3);color:var(--redL)}
+
+/* complete */
+.complete{text-align:center;padding:40px 0}
+.complete .check{width:76px;height:76px;border-radius:50%;background:linear-gradient(135deg,var(--green),var(--accent));display:flex;align-items:center;justify-content:center;font-size:2.4rem;margin:0 auto 18px;color:#fff}
+.complete h2{font-size:1.7rem;font-weight:900;margin-bottom:8px}
+.complete p{color:var(--sub);margin:6px 0}
+.reward{display:inline-block;background:rgba(245,184,46,.12);border:1px solid rgba(245,184,46,.3);color:var(--gold);font-weight:800;border-radius:10px;padding:8px 16px;margin-top:12px}
+
+#confetti{position:fixed;inset:0;pointer-events:none;z-index:100}
+.footer-note{text-align:center;color:var(--dim);font-size:.76rem;margin-top:30px;line-height:1.5}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<canvas id="confetti"></canvas>
+<script>
+/* ════════════════════════════════════════════════════
+   FinLYNK — Time Value of Money Decoder
+   Content sourced from IMBA 6071 (Clarke) Exercise 1.
+   Single-file, no build, no backend. Progress in localStorage.
+════════════════════════════════════════════════════ */
+const SAVE_KEY='finlynk_v1';
+
+/* Role palette used across decode "tag" stages */
+const ROLES={
+  PV:'PV — present (today) value',
+  FV:'FV — future / later amount',
+  C :'C — repeating payment',
+  r :'r — interest / discount rate',
+  t :'t — number of periods',
+  g :'g — growth rate',
+  skip:'— not plugged in directly'
+};
+function roleOptions(allowed){
+  const keys=['',...allowed,'skip'];
+  return keys.map(k=>k===''?`<option value="">choose…</option>`:`<option value="${k}">${ROLES[k]}</option>`).join('');
+}
+
+/* ════════════════════════════════════════════════════
+   CONTENT
+════════════════════════════════════════════════════ */
+const TRACKS=[
+{
+  id:'tvm', name:'Time Value of Money', icon:'⏳', color:'#26A69A',
+  desc:'The whole foundation of Exercise 1 — and the skill of turning a word problem into the right formula.',
+  steps:[
+    /* ---- 1. intuition lesson ---- */
+    {type:'lesson', title:'A dollar today ≠ a dollar later',
+     lead:'This one idea drives all of corporate finance.',
+     body:`<p>Money has a <b>time value</b>: a dollar in your hand today is worth more than a dollar promised next year, because today's dollar can be invested and grow.</p>
+     <p>Every Exercise-1 problem is really the same question in disguise: <b>move money across time</b> so you can compare amounts fairly. You either push money <b>forward</b> in time (compounding → a Future Value) or pull it <b>back</b> to today (discounting → a Present Value).</p>`,
+     concept:{t:'The trap the pros warn about', body:`<p>Adding up dollars from different years — like a "$4.755M contract" that pays out over 25 years — is a unit error. Year-1 dollars and year-25 dollars aren't the same unit. You must discount them to a common date first.</p>`, warn:true}
+    },
+    /* ---- 2. the five variables ---- */
+    {type:'lesson', title:'The five things every problem gives you',
+     lead:'Learn this vocabulary and half the battle is over.',
+     body:`<p>Almost every number in a TVM word problem is one of these five roles. Your job when reading is to <b>label each number</b> with its role:</p>`,
+     terms:[
+       ['PV','the value <i>today</i> (a price, a loan amount, a lump sum now)'],
+       ['FV','an amount at some <i>future</i> date'],
+       ['C','a <i>repeating</i> equal payment (per year, per month…) — an annuity'],
+       ['r','the interest / discount / "opportunity cost" rate per period'],
+       ['t','how many periods (years, months) the money moves across'],
+     ],
+     concept:{t:'The one question that unlocks everything', body:`<p>Before touching a formula, ask: <b>"What am I solving FOR, and what did they GIVE me?"</b> Tag every number with a role, see which role is missing — that missing one is your answer.</p>`}
+    },
+    /* ---- 3. THE DECODER METHOD (flagship) ---- */
+    {type:'lesson', title:'The Decoder Method — picking the formula',
+     lead:'A decision tree that tells you which formula to reach for.',
+     body:`<p>This is the part that trips everyone up. Once your numbers are tagged, walk this tree in order. The first "yes" gives you your formula.</p>`,
+     tree:[
+       {c:'', q:'1. Is it ONE single amount moving through time?', a:'Then it\'s a <b>lump sum</b>. Solving for later → <b>FV = PV(1+r)ᵗ</b>. Solving for today → <b>PV = FV/(1+r)ᵗ</b>.'},
+       {c:'g', q:'2. Is it the SAME payment every period for a fixed number of periods?', a:'That\'s an <b>annuity</b>. Value today → PV annuity. Value at the end → FV annuity. Solving for the payment itself → <b>PMT</b>.'},
+       {c:'gold', q:'3. Does the payment go on FOREVER?', a:'That\'s a <b>perpetuity</b>: <b>PV = C / r</b>. If it grows forever at g, use <b>PV = C / (r − g)</b>.'},
+       {c:'p', q:'4. Are the cash flows DIFFERENT each period (uneven)?', a:'Discount each one separately and add: <b>PV = Σ CFₜ/(1+r)ᵗ</b> — the NPV function.'},
+     ],
+     concept:{t:'Two more reflexes that save points', body:`<p><b>Units must match.</b> If payments are monthly, the rate must be monthly (annual ÷ 12) and t must be in months (years × 12).</p><p><b>Timing.</b> "End of each year" is a normal annuity. A payment "today" sits outside the annuity and is added separately.</p>`}
+    },
+    /* ---- 4. quiz: cash-flow shape ---- */
+    {type:'quiz', q:'"You\'ll receive $300,000 at the end of each year for the next 4 years." What shape is this cash flow?',
+     opts:['A single lump sum','An ordinary annuity','A perpetuity','Uneven cash flows'],
+     answer:1,
+     exp:'Same amount ($300k), fixed number of periods (4), arriving at the end of each period = an ordinary annuity. Reach for the annuity formula.'},
+    /* ---- 5. quiz: which formula ---- */
+    {type:'quiz', q:'A scholarship will pay $250,000 every year forever. Which formula finds the gift needed today?',
+     opts:['FV = PV(1+r)ᵗ','PV = (C/r)[1 − 1/(1+r)ᵗ]','PV = C / r','PV = FV/(1+r)ᵗ'],
+     answer:2,
+     exp:'"Every year forever" = a perpetuity. Its present value is simply C / r. No t appears because it never ends.'},
+
+    /* ---- 6. DECODE #1 — lump sum PV ---- */
+    {type:'decode', title:'Decode: the year-25 payment', ref:'Ex 1 · Problem 1(b)',
+     scenario:`A minor-league pitcher's contract pays him <span class="num">$210,000</span> at the end of <span class="num">year 25</span>. The team discounts cash flows at <span class="num">12%</span>.`,
+     ask:`What is that single year-25 payment worth <span class="qk">today</span>?`,
+     roles:['PV','FV','r','t'],
+     givens:[
+       {v:'$210,000', ctx:'the amount he receives in year 25', role:'FV'},
+       {v:'12%',      ctx:'the discount rate',                 role:'r'},
+       {v:'25',       ctx:'years until the payment',           role:'t'},
+     ],
+     formulas:[
+       {f:'PV = FV / (1 + r)ᵗ', label:'Present value of a lump sum', correct:true,
+        why:'One single future amount pulled back to today → discount it once by (1+r)ᵗ.'},
+       {f:'FV = PV × (1 + r)ᵗ', label:'Future value of a lump sum', correct:false,
+        why:'This pushes a present amount forward. But you already have the future amount and want today\'s value — the opposite direction.'},
+       {f:'PV = (C/r)[1 − 1/(1+r)ᵗ]', label:'Present value of an annuity', correct:false,
+        why:'There\'s no repeating payment here — it\'s one payment in one year. Annuity formulas are overkill and wrong.'},
+     ],
+     plug:{template:'PV = <b>[FV]</b> / (1 + <b>[r]</b>)<sup><b>[t]</b></sup>',
+       blanks:[
+         {key:'FV', accept:['210000'], tip:'FV'},
+         {key:'r',  accept:['0.12','12','12%'], tip:'r (decimal)'},
+         {key:'t',  accept:['25'], tip:'t'},
+       ]},
+     solve:[
+       {c:'(1 + 0.12)²⁵ = 1.12²⁵', r:'≈ 17.000'},
+       {c:'PV = 210,000 / 17.000', r:'≈ $12,352.89'},
+     ],
+     answer:'$12,352.89',
+     meaning:'A $210,000 payment 25 years out is worth only about $12,400 today. Discounting at 12% strips away ~94% of its face value — that\'s how powerful time and rate are over long horizons.'},
+
+    /* ---- 7. DECODE #2 — annuity PV ---- */
+    {type:'decode', title:'Decode: four years of payments', ref:'Ex 1 · Problem 2 (Offer C)',
+     scenario:`A buyer offers you <span class="num">$300,000</span> at the end of each year for the next <span class="num">4</span> years. Your opportunity cost of capital is <span class="num">7%</span>.`,
+     ask:`What is that stream of payments worth <span class="qk">today</span>?`,
+     roles:['PV','C','r','t'],
+     givens:[
+       {v:'$300,000', ctx:'received each year', role:'C'},
+       {v:'7%',       ctx:'opportunity cost of capital', role:'r'},
+       {v:'4',        ctx:'number of yearly payments', role:'t'},
+     ],
+     formulas:[
+       {f:'PV = (C/r) × [1 − 1/(1+r)ᵗ]', label:'Present value of an annuity', correct:true,
+        why:'Same payment, fixed number of periods, valued today → the present value of an ordinary annuity.'},
+       {f:'FV = C × [((1+r)ᵗ − 1)/r]', label:'Future value of an annuity', correct:false,
+        why:'This gives the value at the END of the 4 years, not today. The question asks for value now.'},
+       {f:'PV = C / r', label:'Perpetuity', correct:false,
+        why:'This stream stops after 4 years — it isn\'t forever, so the perpetuity formula overstates it badly.'},
+     ],
+     plug:{template:'PV = (<b>[C]</b> / <b>[r]</b>) × [1 − 1/(1 + <b>[r2]</b>)<sup><b>[t]</b></sup>]',
+       blanks:[
+         {key:'C',  accept:['300000'], tip:'C'},
+         {key:'r',  accept:['0.07','7','7%'], tip:'r'},
+         {key:'r2', accept:['0.07','7','7%'], tip:'r again'},
+         {key:'t',  accept:['4'], tip:'t'},
+       ]},
+     solve:[
+       {c:'1 − 1/1.07⁴ = 1 − 0.7629', r:'= 0.2371'},
+       {c:'300,000 / 0.07', r:'= 4,285,714'},
+       {c:'4,285,714 × 0.2371', r:'≈ $1,016,163.38'},
+     ],
+     answer:'$1,016,163.38',
+     meaning:'The four $300k payments total $1.2M on paper, but they\'re worth about $1.016M today. In the real problem you\'d add the $400k paid up front to get Offer C\'s full value of $1,416,163 — which is why it beats a $1.25M cash offer.'},
+
+    /* ---- 8. DECODE #3 — solve for payment (mortgage) ---- */
+    {type:'decode', title:'Decode: the mortgage payment', ref:'Ex 1 · Problem 3(b)',
+     scenario:`You finance <span class="num">$446,250</span> with a <span class="num">30</span>-year fixed mortgage at an annual rate of <span class="num">5.4%</span>, paid <span class="num">monthly</span>.`,
+     ask:`What is the <span class="qk">monthly payment</span>?`,
+     roles:['PV','C','r','t'],
+     givens:[
+       {v:'$446,250', ctx:'the amount financed (today\'s loan balance)', role:'PV'},
+       {v:'5.4%',     ctx:'annual rate — watch the units', role:'r'},
+       {v:'30',       ctx:'years — watch the units', role:'t'},
+     ],
+     formulas:[
+       {f:'C = PV × r / [1 − 1/(1+r)ᵗ]', label:'Payment on an annuity (solve for C)', correct:true,
+        why:'A loan is a present value; equal monthly payments are the annuity. You know PV and solve for the payment C.'},
+       {f:'PV = (C/r)[1 − 1/(1+r)ᵗ]', label:'Present value of an annuity', correct:false,
+        why:'Right family, wrong rearrangement — here you already know PV and want C, so use the PMT form.'},
+       {f:'FV = PV(1+r)ᵗ', label:'Future value of a lump sum', correct:false,
+        why:'There\'s no single lump sum growing — the loan is repaid through a stream of equal payments.'},
+     ],
+     plug:{template:'C = <b>[PV]</b> × <b>[r]</b> / [1 − 1/(1 + <b>[r2]</b>)<sup><b>[t]</b></sup>]',
+       blanks:[
+         {key:'PV', accept:['446250'], tip:'PV'},
+         {key:'r',  accept:['0.0045','0.045','.0045'], tip:'monthly r'},
+         {key:'r2', accept:['0.0045','0.045','.0045'], tip:'monthly r'},
+         {key:'t',  accept:['360'], tip:'months'},
+       ]},
+     convert:`Because payments are <b>monthly</b>, convert the units first: monthly rate r = 5.4% ÷ 12 = <b>0.0045</b>, and periods t = 30 × 12 = <b>360</b>. This unit conversion is the #1 place people lose the point.`,
+     solve:[
+       {c:'monthly r = 0.054/12', r:'= 0.0045'},
+       {c:'t = 30 × 12', r:'= 360'},
+       {c:'1 − 1/1.0045³⁶⁰ = 1 − 0.1988', r:'= 0.8012'},
+       {c:'C = 446,250 × 0.0045 / 0.8012', r:'≈ $2,505.83'},
+     ],
+     answer:'$2,505.83 / month',
+     meaning:'The monthly payment is about $2,506. Notice the trick was never the formula — it was converting the annual 5.4% and 30 years into a monthly 0.45% and 360 periods before plugging in.'},
+
+    /* ---- 9. DECODE #4 — perpetuity + growing ---- */
+    {type:'decode', title:'Decode: the endowment', ref:'Ex 1 · Problem 5(a & b)',
+     scenario:`A donor wants a scholarship that pays <span class="num">$250,000</span> every year <span class="num">forever</span>, first payment in one year. The endowment earns <span class="num">6.5%</span> per year.`,
+     ask:`How large must the gift be <span class="qk">today</span>?`,
+     roles:['C','r','g'],
+     givens:[
+       {v:'$250,000', ctx:'annual scholarship payment', role:'C'},
+       {v:'6.5%',     ctx:'expected annual return', role:'r'},
+       {v:'forever',  ctx:'a signal, not a number to plug', role:'skip'},
+     ],
+     formulas:[
+       {f:'PV = C / r', label:'Level perpetuity', correct:true,
+        why:'A constant payment that never ends is a perpetuity — its present value is just C divided by r.'},
+       {f:'PV = (C/r)[1 − 1/(1+r)ᵗ]', label:'Annuity', correct:false,
+        why:'An annuity stops after t periods. This payment is forever, so there is no t to plug in.'},
+       {f:'PV = C / (r − g)', label:'Growing perpetuity', correct:false,
+        why:'That\'s the right tool only once the payment grows. Part (a) is a level payment, so g = 0 and it reduces to C/r.'},
+     ],
+     plug:{template:'PV = <b>[C]</b> / <b>[r]</b>',
+       blanks:[
+         {key:'C', accept:['250000'], tip:'C'},
+         {key:'r', accept:['0.065','6.5','6.5%'], tip:'r'},
+       ]},
+     solve:[
+       {c:'PV = 250,000 / 0.065', r:'≈ $3,846,153.85'},
+     ],
+     answer:'$3,846,154',
+     meaning:'It takes ~$3.85M today to fund $250k a year forever at 6.5%. In part (b), if the award must grow 2.5%/yr, you switch to the growing perpetuity C/(r−g) = 250,000/0.04 = $6,250,000 — growth makes a perpetual promise dramatically more expensive.'},
+
+    /* ---- 10. wrap quiz ---- */
+    {type:'quiz', q:'The real skill Exercise 1 tests is…',
+     opts:['Memorizing formulas perfectly','Reading the word problem, tagging each number, and picking the matching formula','Doing arithmetic fast in your head','Using Excel functions only'],
+     answer:1,
+     exp:'The formulas are on the sheet. Points are won by decoding the words into roles and choosing the right tool — exactly the loop you just practiced. Keep drilling these until the decision tree is automatic.'},
+  ]
+},
+];
+
+/* ════════════════════════════════════════════════════
+   STATE
+════════════════════════════════════════════════════ */
+let S=loadState();
+function loadState(){
+  try{ return JSON.parse(localStorage.getItem(SAVE_KEY))||defaultState(); }
+  catch{ return defaultState(); }
+}
+function defaultState(){ return {xp:0, streak:1, progress:{}, completed:{}}; }
+function persist(){ localStorage.setItem(SAVE_KEY, JSON.stringify(S)); }
+
+let view={screen:'home', track:null, step:0, answered:false, sel:null, dstage:0, dstageDone:[]};
+
+/* ════════════════════════════════════════════════════
+   RENDER
+════════════════════════════════════════════════════ */
+const app=()=>document.getElementById('app');
+function render(){
+  if(view.screen==='home') renderHome();
+  else if(view.screen==='step') renderStep();
+  else if(view.screen==='complete') renderComplete();
+}
+function topbar(){
+  return `<div class="topbar">
+    <div class="brand" onclick="goHome()"><span class="logo">$</span>Fin<span class="x">LYNK</span></div>
+    <div class="top-right">
+      <div class="streak">🔥 ${S.streak}</div>
+      <div class="xp-pill">⚡ ${S.xp} XP</div>
+    </div>
+  </div>`;
+}
+
+function renderHome(){
+  const totalSteps=TRACKS.reduce((a,t)=>a+t.steps.length,0);
+  const doneSteps=Object.values(S.progress).reduce((a,v)=>a+v,0);
+  const tracksDone=Object.keys(S.completed).length;
+
+  // MVP: TVM unlocked; the rest shown as roadmap (locked/coming soon)
+  const ROADMAP=[
+    {n:'Capital Budgeting — NPV & IRR', icon:'📊', color:'#5B8DEF', desc:'Ch. 5–6 · Exercise 2'},
+    {n:'Interest Rates & Bond Pricing', icon:'📉', color:'#F5B82E', desc:'Ch. 8 · Exercise 3'},
+    {n:'Stock Valuation (DDM)', icon:'📈', color:'#9B7BF0', desc:'Ch. 9 · Exercise 4'},
+    {n:'Risk, Return & the Cost of Capital', icon:'⚖️', color:'#EF5350', desc:'Ch. 10–13 · Exercise 5 (WACC)'},
+    {n:'Integrative — EVA / MVA', icon:'🏆', color:'#26A69A', desc:'Ch. 9,13,14 · Exercise 6'},
+  ];
+
+  const t=TRACKS[0], ti=0;
+  const prog=S.progress[t.id]||0, done=S.completed[t.id];
+  const pct=Math.round(prog/t.steps.length*100);
+  let pill = done?'<span class="pill pill-done">Completed</span>'
+            : prog>0?'<span class="pill pill-prog">In progress</span>'
+            : '<span class="pill pill-new">Start here</span>';
+  const liveCard=`<div class="track-card" onclick="openTrack(0)">
+      <div class="track-num" style="background:${t.color}20;color:${t.color}">${t.icon}</div>
+      <div class="track-info">
+        <div class="track-name">1. ${t.name} ${pill}</div>
+        <div class="track-desc">${t.desc}</div>
+        <div class="track-meta">${t.steps.filter(s=>s.type==='lesson').length} lessons · ${t.steps.filter(s=>s.type==='quiz').length} quiz · ${t.steps.filter(s=>s.type==='decode').length} decoders</div>
+        ${prog>0&&!done?`<div class="mini-prog"><div style="width:${pct}%"></div></div>`:''}
+      </div>
+      <div class="track-arrow">${done?'✓':'›'}</div>
+    </div>`;
+
+  const roadCards=ROADMAP.map((r,i)=>`<div class="track-card locked">
+      <div class="track-num" style="background:${r.color}18;color:${r.color}">${r.icon}</div>
+      <div class="track-info">
+        <div class="track-name">${i+2}. ${r.n} <span class="pill pill-soon">Coming soon</span></div>
+        <div class="track-desc">${r.desc}</div>
+      </div><div class="track-arrow">›</div>
+    </div>`).join('');
+
+  app().innerHTML=topbar()+`<div class="wrap fade">
+    <div class="hero">
+      <div class="kicker">IMBA 6071 · Financial Management</div>
+      <h1>Stop guessing what<br>to plug in.</h1>
+      <p>Read a finance word problem, tag every number with its role, pick the right formula, and solve it step by step — until the decision becomes automatic.</p>
+    </div>
+    <div class="stats">
+      <div class="stat"><div class="big">${doneSteps}/${totalSteps}</div><div class="lbl">Steps done</div></div>
+      <div class="stat"><div class="big">${tracksDone}/6</div><div class="lbl">Tracks complete</div></div>
+      <div class="stat"><div class="big">${S.xp}</div><div class="lbl">Total XP</div></div>
+    </div>
+    <div class="sec-label">Your Curriculum</div>
+    <div class="track-grid">${liveCard}${roadCards}</div>
+    <div class="notice"><b>Study tool only.</b> Built from the practice problems Clarke posts <i>before</i> class, to help you learn the method. Per the syllabus, no AI or app of any kind may be used <b>during</b> the six graded in-class exercises — that's an Honor Code line. Use this to prepare, then walk in and do it yourself.</div>
+    <p class="footer-note">FinLYNK · a study companion for Financial Management · not affiliated with Georgia Tech or Scheller.</p>
+  </div>`;
+}
+
+/* ════════════════════════════════════════════════════
+   STEP DISPATCH
+════════════════════════════════════════════════════ */
+function renderStep(){
+  const t=TRACKS[view.track];
+  const step=t.steps[view.step];
+  const total=t.steps.length;
+  const pct=Math.round((view.step)/total*100);
+  const icon={lesson:'📖',quiz:'⚡',decode:'🔍'};
+  const dots=t.steps.map((s,i)=>`<div class="d ${i<view.step?'done':i===view.step?'cur':''}" onclick="goStep(${i})" title="${i+1}. ${s.title||s.type}"></div>`).join('');
+
+  let inner='';
+  if(step.type==='lesson') inner=lessonHTML(t,step);
+  else if(step.type==='quiz') inner=quizHTML(t,step);
+  else if(step.type==='decode') inner=decodeHTML(t,step);
+
+  app().innerHTML=topbar()+`<div class="wrap fade">
+    <div class="lesson-top">
+      <button class="btn btn-ghost btn-sm" onclick="goHome()">← Tracks</button>
+      <div class="crumbs"><b>${t.name}</b> · ${view.step+1}/${total}</div>
+    </div>
+    <div class="prog-line"><div style="width:${pct}%"></div></div>
+    <div class="step-dots">${dots}</div>
+    ${inner}
+  </div>`;
+}
+
+/* ── LESSON ── */
+function lessonHTML(t,step){
+  let terms='';
+  if(step.terms){
+    terms=`<div class="term-row">${step.terms.map(([a,b])=>`<div class="term"><b>${a}</b> — ${b}</div>`).join('')}</div>`;
+  }
+  let tree='';
+  if(step.tree){
+    tree=`<div class="tree">${step.tree.map(n=>`<div class="tnode ${n.c}"><div class="q">${n.q}</div><div class="a">${n.a}</div></div>`).join('')}</div>`;
+  }
+  const concept=step.concept?`<div class="concept ${step.concept.warn?'warn':''}"><div class="ct">${step.concept.t}</div>${step.concept.body}</div>`:'';
+  return `<div class="card">
+    <h2>${step.title}</h2>
+    <div class="lead">${step.lead||''}</div>
+    ${step.body||''}
+    ${terms}${tree}
+    ${concept}
+    <div class="nav-row">
+      ${view.step>0?`<button class="btn btn-ghost btn-block" onclick="prevStep()">← Back</button>`:''}
+      <button class="btn btn-primary btn-block" onclick="nextStep()">Continue →</button>
+    </div>
+  </div>`;
+}
+
+/* ── QUIZ ── */
+function quizHTML(t,step){
+  const opts=step.opts.map((o,i)=>{
+    let cls='';
+    if(view.answered){
+      if(i===step.answer) cls='correct';
+      else if(i===view.sel) cls='wrong';
+      cls+=' dis';
+    }
+    return `<div class="opt ${cls}" ${view.answered?'':`onclick="pickOpt(${i})"`}>
+      <span class="key">${String.fromCharCode(65+i)}</span>${o}</div>`;
+  }).join('');
+  const ok=view.answered&&view.sel===step.answer;
+  const explain=view.answered?`<div class="explain ${ok?'ok':'no'}">${ok?'✓ Correct. ':'✗ Not quite. '}${step.exp}</div>`:'';
+  return `<div class="quiz-box">
+    <div style="font-size:.7rem;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;color:var(--gold);margin-bottom:10px">Quick Check</div>
+    <div class="quiz-q">${step.q}</div>
+    <div class="quiz-opts">${opts}</div>
+    ${explain}
+    <div class="nav-row">
+      ${view.step>0?`<button class="btn btn-ghost btn-block" onclick="prevStep()">← Back</button>`:''}
+      ${view.answered
+        ? `<button class="btn btn-primary btn-block" onclick="nextStep()">Continue →</button>`
+        : `<button class="btn btn-ghost btn-block" onclick="skipNext()">Skip →</button>`}
+    </div>
+  </div>`;
+}
+
+/* ════════════════════════════════════════════════════
+   DECODER  (5 sub-stages)
+   0 Read · 1 Tag · 2 Pick formula · 3 Plug in · 4 Solve
+════════════════════════════════════════════════════ */
+const DSTAGES=['Read','Tag','Formula','Plug in','Solve'];
+function dstageBar(){
+  return `<div class="dstage-bar">${DSTAGES.map((s,i)=>{
+    const cls=i<view.dstage?'done':i===view.dstage?'active':'';
+    return `<div class="dstep ${cls}">${i+1}·${s}</div>`;
+  }).join('')}</div>`;
+}
+function decodeHTML(t,step){
+  let body='';
+  if(view.dstage===0) body=dReadHTML(step);
+  else if(view.dstage===1) body=dTagHTML(step);
+  else if(view.dstage===2) body=dFormulaHTML(step);
+  else if(view.dstage===3) body=dPlugHTML(step);
+  else body=dSolveHTML(step);
+  return `<div class="card">
+    <div class="ref-tag">${step.ref}</div>
+    <h2>${step.title}</h2>
+    ${dstageBar()}
+    ${body}
+  </div>`;
+}
+
+/* stage 0 — read */
+function dReadHTML(step){
+  return `<div class="scenario">${step.scenario}</div>
+    <div class="ask">Question: ${step.ask}</div>
+    <div class="stage-help" style="margin-top:16px">Read it once for the story, once for the numbers. Ready to break it down?</div>
+    <div class="nav-row">
+      ${view.step>0?`<button class="btn btn-ghost" onclick="prevStep()">← Back</button>`:''}
+      <button class="btn btn-primary btn-block" onclick="dNext()">Decode it →</button>
+    </div>`;
+}
+
+/* stage 1 — tag the numbers */
+function dTagHTML(step){
+  const rows=step.givens.map((g,i)=>`
+    <div class="tag-row" id="tag${i}">
+      <div class="tag-num">${g.v}</div>
+      <div class="tag-ctx">${g.ctx}</div>
+      <select id="sel${i}">${roleOptions(step.roles)}</select>
+      <div class="mark" id="mk${i}"></div>
+    </div>`).join('');
+  return `<div class="stage-title">Stage 2 · Tag every number</div>
+    <div class="stage-help">What <b>role</b> does each number play? Match it to a variable. This is the habit that makes the formula obvious.</div>
+    <div class="scenario" style="margin-bottom:14px">${step.scenario}</div>
+    <div class="tag-list">${rows}</div>
+    <div class="feedback" id="fb"></div>
+    <div class="nav-row">
+      <button class="btn btn-ghost" onclick="dPrev()">← Back</button>
+      <button class="btn btn-green btn-block" id="tagBtn" onclick="checkTags()">Check tags</button>
+      <button class="btn btn-primary btn-block" id="tagNext" style="display:none" onclick="dNext()">Next: pick the formula →</button>
+    </div>`;
+}
+function checkTags(){
+  const step=TRACKS[view.track].steps[view.step];
+  let allOk=true;
+  step.givens.forEach((g,i)=>{
+    const val=document.getElementById('sel'+i).value;
+    const row=document.getElementById('tag'+i), mk=document.getElementById('mk'+i);
+    row.classList.remove('ok','bad');
+    if(val===g.role){ row.classList.add('ok'); mk.textContent='✓'; mk.style.color='var(--greenL)'; }
+    else { row.classList.add('bad'); mk.textContent='✗'; mk.style.color='var(--redL)'; allOk=false; }
+  });
+  const fb=document.getElementById('fb');
+  fb.className='feedback show '+(allOk?'ok':'no');
+  if(allOk){
+    fb.innerHTML='✓ Every number tagged correctly. Notice which role is <i>missing</i> — that\'s what you\'re solving for.';
+    document.getElementById('tagBtn').style.display='none';
+    document.getElementById('tagNext').style.display='';
+    if(!view.dstageDone.includes(1)){ view.dstageDone.push(1); bumpXP(10); }
+  } else {
+    fb.innerHTML='✗ Some tags are off (marked ✗). Re-read the phrase next to each number and try again.';
+  }
+}
+
+/* stage 2 — pick the formula */
+function dFormulaHTML(step){
+  const opts=step.formulas.map((f,i)=>`
+    <div class="fopt" id="fo${i}" onclick="pickFormula(${i})">
+      <div class="formula">${f.f}</div>
+      <div class="flabel">${f.label}</div>
+    </div>`).join('');
+  return `<div class="stage-title">Stage 3 · Pick the formula</div>
+    <div class="stage-help">Your numbers are tagged. Walk the Decoder tree: what shape is this cash flow, and which direction are you solving? Pick the tool.</div>
+    <div class="ask" style="margin-bottom:14px">${step.ask}</div>
+    <div class="fpick">${opts}</div>
+    <div class="feedback" id="fbf"></div>
+    <div class="nav-row">
+      <button class="btn btn-ghost" onclick="dPrev()">← Back</button>
+      <button class="btn btn-primary btn-block" id="fNext" style="display:none" onclick="dNext()">Next: plug in →</button>
+    </div>`;
+}
+function pickFormula(i){
+  const step=TRACKS[view.track].steps[view.step];
+  const f=step.formulas[i];
+  const fb=document.getElementById('fbf');
+  const el=document.getElementById('fo'+i);
+  if(f.correct){
+    el.classList.add('correct');
+    step.formulas.forEach((_,j)=>document.getElementById('fo'+j).onclick=null);
+    fb.className='feedback show ok';
+    fb.innerHTML='✓ Right tool. '+f.why;
+    document.getElementById('fNext').style.display='';
+    if(!view.dstageDone.includes(2)){ view.dstageDone.push(2); bumpXP(10); }
+  } else {
+    el.classList.add('wrong');
+    fb.className='feedback show no';
+    fb.innerHTML='✗ Not this one. '+f.why+'<br><br>Try again.';
+  }
+}
+
+/* stage 3 — plug in */
+function dPlugHTML(step){
+  const p=step.plug;
+  let tpl=p.template;
+  p.blanks.forEach(b=>{
+    tpl=tpl.replace('['+b.key+']', `<input class="blank" id="bl_${b.key}" placeholder="${b.tip}" autocomplete="off">`);
+  });
+  const key=p.blanks.map(b=>`<span class="pk"><b>${b.tip}</b></span>`).join('');
+  const convert=step.convert?`<div class="convert"><b>⚠ Units first:</b> ${step.convert}</div>`:'';
+  return `<div class="stage-title">Stage 4 · Plug in the numbers</div>
+    <div class="stage-help">Drop each tagged value into its slot. Enter rates as decimals (7% → 0.07).</div>
+    ${convert}
+    <div class="plug">
+      <div class="plug-formula">${tpl}</div>
+      <div class="plug-key">${key}</div>
+    </div>
+    <div class="feedback" id="fbp"></div>
+    <div class="nav-row">
+      <button class="btn btn-ghost" onclick="dPrev()">← Back</button>
+      <button class="btn btn-green btn-block" id="plugBtn" onclick="checkPlug()">Check my values</button>
+      <button class="btn btn-primary btn-block" id="plugNext" style="display:none" onclick="dNext()">Solve it →</button>
+    </div>`;
+}
+function normNum(s){ return (s||'').toString().trim().toLowerCase().replace(/[$,\s%]/g,''); }
+function checkPlug(){
+  const step=TRACKS[view.track].steps[view.step];
+  let allOk=true;
+  step.plug.blanks.forEach(b=>{
+    const el=document.getElementById('bl_'+b.key);
+    const val=normNum(el.value);
+    const ok=b.accept.map(normNum).includes(val);
+    el.classList.remove('ok','bad');
+    el.classList.add(ok?'ok':'bad');
+    if(!ok) allOk=false;
+  });
+  const fb=document.getElementById('fbp');
+  fb.className='feedback show '+(allOk?'ok':'no');
+  if(allOk){
+    fb.innerHTML='✓ Everything in the right slot. Now watch it solve.';
+    document.getElementById('plugBtn').style.display='none';
+    document.getElementById('plugNext').style.display='';
+    if(!view.dstageDone.includes(3)){ view.dstageDone.push(3); bumpXP(10); }
+  } else {
+    fb.innerHTML='✗ One or more slots are off (red). Check your tags and remember to convert rates to decimals'+(step.convert?' and match monthly units.':'.');
+  }
+}
+
+/* stage 4 — solve reveal */
+function dSolveHTML(step){
+  const steps=step.solve.map((s,i)=>`
+    <div class="sstep" style="animation-delay:${i*0.35}s">
+      <div class="sn">Step ${i+1}</div>
+      <div class="sc">${s.c} &nbsp;<span class="sr">${s.r}</span></div>
+    </div>`).join('');
+  if(!view.dstageDone.includes(4)){ view.dstageDone.push(4); }
+  return `<div class="stage-title">Stage 5 · Solve it step by step</div>
+    <div class="stage-help">Same arithmetic every time — the hard part (choosing and plugging) is already done.</div>
+    <div class="solve">${steps}</div>
+    <div class="answer-box" style="animation-delay:${step.solve.length*0.35}s;opacity:0;animation:sIn .4s forwards ${step.solve.length*0.35}s">
+      <div class="albl">Answer</div>
+      <div class="aval">${step.answer}</div>
+    </div>
+    <div class="meaning"><div class="ml">What this number means</div>${step.meaning}</div>
+    <div class="nav-row">
+      <button class="btn btn-ghost" onclick="dPrev()">← Back</button>
+      <button class="btn btn-primary btn-block" onclick="nextStep()">${view.step+1>=TRACKS[view.track].steps.length?'Finish track →':'Next problem →'}</button>
+    </div>`;
+}
+
+/* decode sub-nav */
+function dNext(){ view.dstage=Math.min(4,view.dstage+1); renderStep(); window.scrollTo(0,0); }
+function dPrev(){
+  if(view.dstage>0){ view.dstage--; renderStep(); window.scrollTo(0,0); }
+  else { prevStep(); }
+}
+
+/* ════════════════════════════════════════════════════
+   COMPLETE
+════════════════════════════════════════════════════ */
+function renderComplete(){
+  const t=TRACKS[view.track];
+  app().innerHTML=topbar()+`<div class="wrap fade">
+    <div class="complete">
+      <div class="check">✓</div>
+      <h2>${t.name} complete!</h2>
+      <p>You worked all ${t.steps.length} steps — including ${t.steps.filter(s=>s.type==='decode').length} full decoders from real Exercise-1 problems.</p>
+      <div class="reward">⚡ +${t.steps.length*15} XP earned</div>
+      <p style="font-size:.85rem;margin-top:10px">Total XP: ${S.xp}</p>
+      <p style="font-size:.85rem;color:var(--dim);max-width:420px;margin:14px auto 0">Run it again anytime before Exercise 1 (Aug 22). The goal: the decision tree becomes automatic.</p>
+      <div class="nav-row" style="max-width:340px;margin:24px auto 0">
+        <button class="btn btn-primary btn-block" onclick="goHome()">Back to Tracks →</button>
+      </div>
+    </div>
+  </div>`;
+  fireConfetti();
+}
+
+/* ════════════════════════════════════════════════════
+   NAV + XP
+════════════════════════════════════════════════════ */
+function goHome(){ view.screen='home'; render(); window.scrollTo(0,0); }
+function openTrack(ti){
+  view.track=ti;
+  view.step=(S.progress[TRACKS[ti].id]&&!S.completed[TRACKS[ti].id])?S.progress[TRACKS[ti].id]:0;
+  if(S.completed[TRACKS[ti].id]) view.step=0;
+  resetStepFlags();
+  view.screen='step'; render(); window.scrollTo(0,0);
+}
+function resetStepFlags(){ view.answered=false; view.sel=null; view.dstage=0; view.dstageDone=[]; }
+function pickOpt(i){
+  const step=TRACKS[view.track].steps[view.step];
+  view.sel=i; view.answered=true;
+  if(i===step.answer) bumpXP(10);
+  renderStep(); window.scrollTo(0,0);
+}
+function nextStep(){
+  const t=TRACKS[view.track];
+  const reached=Math.max(S.progress[t.id]||0, view.step+1);
+  S.progress[t.id]=Math.min(reached,t.steps.length); persist();
+  if(view.step+1>=t.steps.length){
+    if(!S.completed[t.id]){ S.completed[t.id]=true; bumpXP(t.steps.length*15); }
+    S.completed[t.id]=true; persist();
+    view.screen='complete'; render(); window.scrollTo(0,0); return;
+  }
+  view.step++; resetStepFlags(); renderStep(); window.scrollTo(0,0);
+}
+function prevStep(){ if(view.step>0){view.step--;resetStepFlags();renderStep();window.scrollTo(0,0);} }
+function goStep(i){ const t=TRACKS[view.track]; if(i<0||i>=t.steps.length||i===view.step) return; view.step=i; resetStepFlags(); renderStep(); window.scrollTo(0,0); }
+function skipNext(){ const t=TRACKS[view.track]; if(view.step+1<t.steps.length){ view.step++; resetStepFlags(); renderStep(); window.scrollTo(0,0);} }
+function bumpXP(n){ S.xp+=n; persist();
+  document.querySelectorAll('.xp-pill').forEach(e=>e.innerHTML='⚡ '+S.xp+' XP');
+}
+
+/* ════════════════════════════════════════════════════
+   CONFETTI
+════════════════════════════════════════════════════ */
+const conf=document.getElementById('confetti'), cctx=conf.getContext('2d');
+let cps=[],cactive=false;
+function sizeConf(){conf.width=innerWidth;conf.height=innerHeight;}
+sizeConf();addEventListener('resize',sizeConf);
+function fireConfetti(){
+  cactive=true;cps=[];
+  const cols=['#26A69A','#5B8DEF','#F5B82E','#9B7BF0','#EF5350','#fff'];
+  for(let i=0;i<120;i++)cps.push({x:Math.random()*conf.width,y:-20,vx:(Math.random()-.5)*6,vy:Math.random()*4+2,col:cols[~~(Math.random()*cols.length)],sz:Math.random()*8+4,rot:Math.random()*6,rs:(Math.random()-.5)*.3});
+  loopConf();setTimeout(()=>cactive=false,4000);
+}
+function loopConf(){
+  if(!cactive){cctx.clearRect(0,0,conf.width,conf.height);return;}
+  cctx.clearRect(0,0,conf.width,conf.height);
+  cps.forEach(p=>{p.x+=p.vx;p.y+=p.vy;p.vy+=.08;p.rot+=p.rs;
+    cctx.save();cctx.translate(p.x,p.y);cctx.rotate(p.rot);cctx.fillStyle=p.col;cctx.globalAlpha=Math.max(0,1-p.y/conf.height);
+    cctx.fillRect(-p.sz/2,-p.sz/2,p.sz,p.sz);cctx.restore();});
+  cps=cps.filter(p=>p.y<conf.height+40);
+  requestAnimationFrame(loopConf);
+}
+
+/* boot */
+render();
+</script>
+</body>
+</html>

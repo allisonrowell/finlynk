@@ -1,0 +1,14 @@
+# Netlify config for FinLYNK (static single-page site)
+[build]
+  publish = "."
+
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
+
+# Never cache the HTML so updates show up immediately on every visit
+[[headers]]
+  for = "/*"
+  [headers.values]
+    Cache-Control = "public, max-age=0, must-revalidate"
