@@ -1,10 +1,10 @@
 # FinLYNK — Decode the Finance Word Problem
 
-A gamified, self-paced study companion for **IMBA 6071 Financial Management** (Georgia Tech / Scheller, Prof. Clarke). Built for the one thing that trips students up most: **figuring out what to plug into which formula when reading a word problem.**
+A gamified, self-paced study companion for **IMBA 6071 Financial Management**. Built for the one thing that trips students up most: **figuring out what to plug into which formula when reading a word problem.**
 
 Same engine model as [chartlynk](https://github.com/allisonrowell/chartlynk) — a single self-contained `index.html`, no build step, no backend, progress saved in the browser (localStorage), XP + streak + progress bars.
 
-> **Study tool only.** Built from the practice problems Clarke posts *before* class. Per the syllabus, no AI or app of any kind may be used *during* the six graded in-class exercises — that is an Honor Code line. Use this to prepare, then walk in and do it yourself.
+> **Study tool.** Practice the method until picking the right formula becomes automatic — then do the real work yourself.
 
 ## The signature mechanic — the 5-stage Decoder
 
@@ -20,7 +20,7 @@ Every problem is worked as a game with five stages, earning XP at each:
 
 **Track 1 — Time Value of Money** (live): the intuition, the five variables, the **Decoder Method** decision tree, quizzes, and 4 full decoders built from real Exercise-1 problems (deferred payment, annuity, mortgage payment, endowment/perpetuity).
 
-Roadmap (from the same course + Clarke's 2015–2018 practice exams):
+Roadmap (from the same course materials + past practice exams):
 2. Capital Budgeting — NPV & IRR (Ch. 5–6)
 3. Interest Rates & Bond Pricing (Ch. 8)
 4. Stock Valuation / DDM (Ch. 9)
