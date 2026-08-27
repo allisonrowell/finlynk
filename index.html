@@ -244,6 +244,18 @@ body{
 .meaning{background:rgba(245,184,46,.08);border:1px solid rgba(245,184,46,.22);border-radius:11px;padding:14px 16px;margin-top:12px;font-size:.9rem;line-height:1.55;color:#F0E6CC}
 .meaning .ml{font-size:.68rem;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;color:var(--gold);margin-bottom:6px}
 
+/* problem recap carried onto later stages */
+.recap{background:#0F1522;border:1px solid var(--line);border-radius:11px;padding:12px 15px;margin-bottom:16px}
+.recap-lbl{font-size:.62rem;font-weight:800;letter-spacing:1.2px;text-transform:uppercase;color:var(--dim);margin-bottom:6px}
+.recap-body{font-size:.9rem;line-height:1.55;color:#D8DEEA}
+.recap-body .num{color:var(--gold);font-weight:800;background:rgba(245,184,46,.1);border-radius:5px;padding:1px 5px}
+.recap-ask{margin-top:9px;font-weight:800;font-size:.92rem;color:#fff}
+.recap-ask .qk{color:var(--accent)}
+/* solve: formula header + per-step formula label */
+.solve-formula{background:rgba(91,141,239,.09);border:1px solid rgba(91,141,239,.25);border-radius:10px;padding:12px 14px;margin-bottom:12px;text-align:center}
+.solve-formula .sfl{font-size:.62rem;font-weight:800;letter-spacing:1.2px;text-transform:uppercase;color:var(--accent);margin-bottom:5px}
+.sstep .sf{font-family:'Inter';font-weight:700;font-size:.82rem;color:var(--sub);margin-bottom:4px}
+
 .feedback{margin-top:14px;padding:12px 15px;border-radius:11px;font-size:.88rem;line-height:1.5;display:none}
 .feedback.show{display:block}
 .feedback.ok{background:rgba(38,166,154,.1);border:1px solid rgba(38,166,154,.3);color:var(--greenL)}
@@ -281,9 +293,27 @@ const ROLES={
   g :'g — growth rate',
   skip:'— not plugged in directly'
 };
-function roleOptions(allowed){
+function roleOptions(allowed, sel){
   const keys=['',...allowed,'skip'];
-  return keys.map(k=>k===''?`<option value="">choose…</option>`:`<option value="${k}">${ROLES[k]}</option>`).join('');
+  return keys.map(k=>{
+    const label=k===''?'choose…':ROLES[k];
+    const s=(k===(sel||''))?' selected':'';
+    return `<option value="${k}"${s}>${label}</option>`;
+  }).join('');
+}
+/* Decimal-safe: compares as numbers so .07, 0.07, 0.070 and 7% all match their target */
+function numMatch(input, accepts){
+  const clean=s=>String(s).trim().toLowerCase().replace(/[$,\s%]/g,'');
+  const v=clean(input);
+  if(v==='') return false;
+  const vn=parseFloat(v);
+  return accepts.some(a=>{
+    const ac=clean(a), an=parseFloat(ac);
+    if(isFinite(vn)&&isFinite(an)){
+      return Math.abs(vn-an) <= Math.max(1e-9, Math.abs(an)*1e-6);
+    }
+    return ac===v;
+  });
 }
 
 /* ════════════════════════════════════════════════════
@@ -362,8 +392,8 @@ const TRACKS=[
          {key:'t',  accept:['25'], tip:'t'},
        ]},
      solve:[
-       {c:'(1 + 0.12)²⁵ = 1.12²⁵', r:'≈ 17.000'},
-       {c:'PV = 210,000 / 17.000', r:'≈ $12,352.89'},
+       {f:'(1 + r)ᵗ', c:'(1 + 0.12)²⁵', r:'≈ 17.000'},
+       {f:'PV = FV / (1 + r)ᵗ', c:'210,000 / 17.000', r:'≈ $12,352.89'},
      ],
      answer:'$12,352.89',
      meaning:'A $210,000 payment 25 years out is worth only about $12,400 today. Discounting at 12% strips away ~94% of its face value — that\'s how powerful time and rate are over long horizons.'},
@@ -394,9 +424,9 @@ const TRACKS=[
          {key:'t',  accept:['4'], tip:'t'},
        ]},
      solve:[
-       {c:'1 − 1/1.07⁴ = 1 − 0.7629', r:'= 0.2371'},
-       {c:'300,000 / 0.07', r:'= 4,285,714'},
-       {c:'4,285,714 × 0.2371', r:'≈ $1,016,163.38'},
+       {f:'1 − 1/(1 + r)ᵗ', c:'1 − 1/1.07⁴', r:'= 0.2371'},
+       {f:'C / r', c:'300,000 / 0.07', r:'= 4,285,714'},
+       {f:'(C/r) × [1 − 1/(1 + r)ᵗ]', c:'4,285,714 × 0.2371', r:'≈ $1,016,163.38'},
      ],
      answer:'$1,016,163.38',
      meaning:'The four $300k payments total $1.2M on paper, but they\'re worth about $1.016M today. In the real problem you\'d add the $400k paid up front to get Offer C\'s full value of $1,416,163 — which is why it beats a $1.25M cash offer.'},
@@ -428,10 +458,10 @@ const TRACKS=[
        ]},
      convert:`Because payments are <b>monthly</b>, convert the units first: monthly rate r = 5.4% ÷ 12 = <b>0.0045</b>, and periods t = 30 × 12 = <b>360</b>. This unit conversion is the #1 place people lose the point.`,
      solve:[
-       {c:'monthly r = 0.054/12', r:'= 0.0045'},
-       {c:'t = 30 × 12', r:'= 360'},
-       {c:'1 − 1/1.0045³⁶⁰ = 1 − 0.1988', r:'= 0.8012'},
-       {c:'C = 446,250 × 0.0045 / 0.8012', r:'≈ $2,505.83'},
+       {f:'monthly r = annual r / 12', c:'0.054 / 12', r:'= 0.0045'},
+       {f:'t = years × 12', c:'30 × 12', r:'= 360'},
+       {f:'1 − 1/(1 + r)ᵗ', c:'1 − 1/1.0045³⁶⁰', r:'= 0.8012'},
+       {f:'C = PV × r / [1 − 1/(1 + r)ᵗ]', c:'446,250 × 0.0045 / 0.8012', r:'≈ $2,505.83'},
      ],
      answer:'$2,505.83 / month',
      meaning:'The monthly payment is about $2,506. Notice the trick was never the formula — it was converting the annual 5.4% and 30 years into a monthly 0.45% and 360 periods before plugging in.'},
@@ -460,7 +490,7 @@ const TRACKS=[
          {key:'r', accept:['0.065','6.5','6.5%'], tip:'r'},
        ]},
      solve:[
-       {c:'PV = 250,000 / 0.065', r:'≈ $3,846,153.85'},
+       {f:'PV = C / r', c:'250,000 / 0.065', r:'≈ $3,846,153.85'},
      ],
      answer:'$3,846,154',
      meaning:'It takes ~$3.85M today to fund $250k a year forever at 6.5%. In part (b), if the award must grow 2.5%/yr, you switch to the growing perpetuity C/(r−g) = 250,000/0.04 = $6,250,000 — growth makes a perpetual promise dramatically more expensive.'},
@@ -485,7 +515,8 @@ function loadState(){
 function defaultState(){ return {xp:0, streak:1, progress:{}, completed:{}}; }
 function persist(){ localStorage.setItem(SAVE_KEY, JSON.stringify(S)); }
 
-let view={screen:'home', track:null, step:0, answered:false, sel:null, dstage:0, dstageDone:[]};
+let view={screen:'home', track:null, step:0, answered:false, sel:null, dstage:0, dstageDone:[],
+  dtags:{}, dplug:{}, dformulaSolved:false, dformulaWrong:null};
 
 /* ════════════════════════════════════════════════════
    RENDER
@@ -679,31 +710,40 @@ function dReadHTML(step){
     </div>`;
 }
 
+/* problem recap carried onto later stages so you never lose the question */
+function problemRecap(step){
+  return `<div class="recap">
+    <div class="recap-lbl">The problem</div>
+    <div class="recap-body">${step.scenario}</div>
+    <div class="recap-ask">Q: ${step.ask}</div>
+  </div>`;
+}
+
 /* stage 1 — tag the numbers */
 function dTagHTML(step){
   const rows=step.givens.map((g,i)=>`
     <div class="tag-row" id="tag${i}">
       <div class="tag-num">${g.v}</div>
       <div class="tag-ctx">${g.ctx}</div>
-      <select id="sel${i}">${roleOptions(step.roles)}</select>
+      <select id="sel${i}" onchange="view.dtags[${i}]=this.value">${roleOptions(step.roles, view.dtags[i])}</select>
       <div class="mark" id="mk${i}"></div>
     </div>`).join('');
   return `<div class="stage-title">Stage 2 · Tag every number</div>
     <div class="stage-help">What <b>role</b> does each number play? Match it to a variable. This is the habit that makes the formula obvious.</div>
-    <div class="scenario" style="margin-bottom:14px">${step.scenario}</div>
+    ${problemRecap(step)}
     <div class="tag-list">${rows}</div>
     <div class="feedback" id="fb"></div>
     <div class="nav-row">
       <button class="btn btn-ghost" onclick="dPrev()">← Back</button>
-      <button class="btn btn-green btn-block" id="tagBtn" onclick="checkTags()">Check tags</button>
-      <button class="btn btn-primary btn-block" id="tagNext" style="display:none" onclick="dNext()">Next: pick the formula →</button>
+      <button class="btn btn-green" style="flex:1" onclick="checkTags()">Check tags</button>
+      <button class="btn btn-primary" style="flex:1" onclick="dNext()">Next →</button>
     </div>`;
 }
 function checkTags(){
   const step=TRACKS[view.track].steps[view.step];
   let allOk=true;
   step.givens.forEach((g,i)=>{
-    const val=document.getElementById('sel'+i).value;
+    const val=(document.getElementById('sel'+i).value)||'';
     const row=document.getElementById('tag'+i), mk=document.getElementById('mk'+i);
     row.classList.remove('ok','bad');
     if(val===g.role){ row.classList.add('ok'); mk.textContent='✓'; mk.style.color='var(--greenL)'; }
@@ -712,49 +752,48 @@ function checkTags(){
   const fb=document.getElementById('fb');
   fb.className='feedback show '+(allOk?'ok':'no');
   if(allOk){
-    fb.innerHTML='✓ Every number tagged correctly. Notice which role is <i>missing</i> — that\'s what you\'re solving for.';
-    document.getElementById('tagBtn').style.display='none';
-    document.getElementById('tagNext').style.display='';
+    fb.innerHTML='✓ Every number tagged correctly. Notice which role is <i>missing</i> — that\'s what you\'re solving for. Hit Next.';
     if(!view.dstageDone.includes(1)){ view.dstageDone.push(1); bumpXP(10); }
   } else {
-    fb.innerHTML='✗ Some tags are off (marked ✗). Re-read the phrase next to each number and try again.';
+    fb.innerHTML='✗ Some tags are off (marked ✗). Re-read the phrase next to each number and try again — then Next when you\'ve got it.';
   }
 }
 
 /* stage 2 — pick the formula */
 function dFormulaHTML(step){
-  const opts=step.formulas.map((f,i)=>`
-    <div class="fopt" id="fo${i}" onclick="pickFormula(${i})">
+  const solved=view.dformulaSolved;
+  const opts=step.formulas.map((f,i)=>{
+    let cls='';
+    if(solved && f.correct) cls=' correct';
+    else if(!solved && view.dformulaWrong===i) cls=' wrong';
+    const click=solved?'':`onclick="pickFormula(${i})"`;
+    return `<div class="fopt${cls}${solved?' dis':''}" id="fo${i}" ${click}>
       <div class="formula">${f.f}</div>
       <div class="flabel">${f.label}</div>
-    </div>`).join('');
+    </div>`;
+  }).join('');
+  let fb='';
+  if(solved){ const c=step.formulas.find(f=>f.correct); fb=`<div class="feedback show ok">✓ Right tool. ${c.why}</div>`; }
+  else if(view.dformulaWrong!=null){ const w=step.formulas[view.dformulaWrong]; fb=`<div class="feedback show no">✗ Not this one. ${w.why}<br><br>Try again.</div>`; }
   return `<div class="stage-title">Stage 3 · Pick the formula</div>
     <div class="stage-help">Your numbers are tagged. Walk the Decoder tree: what shape is this cash flow, and which direction are you solving? Pick the tool.</div>
-    <div class="ask" style="margin-bottom:14px">${step.ask}</div>
+    ${problemRecap(step)}
     <div class="fpick">${opts}</div>
-    <div class="feedback" id="fbf"></div>
+    ${fb}
     <div class="nav-row">
       <button class="btn btn-ghost" onclick="dPrev()">← Back</button>
-      <button class="btn btn-primary btn-block" id="fNext" style="display:none" onclick="dNext()">Next: plug in →</button>
+      <button class="btn btn-primary" style="flex:1" onclick="dNext()">Next →</button>
     </div>`;
 }
 function pickFormula(i){
   const step=TRACKS[view.track].steps[view.step];
-  const f=step.formulas[i];
-  const fb=document.getElementById('fbf');
-  const el=document.getElementById('fo'+i);
-  if(f.correct){
-    el.classList.add('correct');
-    step.formulas.forEach((_,j)=>document.getElementById('fo'+j).onclick=null);
-    fb.className='feedback show ok';
-    fb.innerHTML='✓ Right tool. '+f.why;
-    document.getElementById('fNext').style.display='';
+  if(step.formulas[i].correct){
+    view.dformulaSolved=true; view.dformulaWrong=null;
     if(!view.dstageDone.includes(2)){ view.dstageDone.push(2); bumpXP(10); }
   } else {
-    el.classList.add('wrong');
-    fb.className='feedback show no';
-    fb.innerHTML='✗ Not this one. '+f.why+'<br><br>Try again.';
+    view.dformulaWrong=i;
   }
+  renderStep();
 }
 
 /* stage 3 — plug in */
@@ -762,12 +801,14 @@ function dPlugHTML(step){
   const p=step.plug;
   let tpl=p.template;
   p.blanks.forEach(b=>{
-    tpl=tpl.replace('['+b.key+']', `<input class="blank" id="bl_${b.key}" placeholder="${b.tip}" autocomplete="off">`);
+    const cur=(view.dplug[b.key]||'').replace(/"/g,'&quot;');
+    tpl=tpl.replace('['+b.key+']', `<input class="blank" id="bl_${b.key}" value="${cur}" oninput="view.dplug['${b.key}']=this.value" placeholder="${b.tip}" autocomplete="off">`);
   });
   const key=p.blanks.map(b=>`<span class="pk"><b>${b.tip}</b></span>`).join('');
   const convert=step.convert?`<div class="convert"><b>⚠ Units first:</b> ${step.convert}</div>`:'';
   return `<div class="stage-title">Stage 4 · Plug in the numbers</div>
-    <div class="stage-help">Drop each tagged value into its slot. Enter rates as decimals (7% → 0.07).</div>
+    <div class="stage-help">Drop each tagged value into its slot. Rates work either way — 7% or 0.07 both count.</div>
+    ${problemRecap(step)}
     ${convert}
     <div class="plug">
       <div class="plug-formula">${tpl}</div>
@@ -776,18 +817,16 @@ function dPlugHTML(step){
     <div class="feedback" id="fbp"></div>
     <div class="nav-row">
       <button class="btn btn-ghost" onclick="dPrev()">← Back</button>
-      <button class="btn btn-green btn-block" id="plugBtn" onclick="checkPlug()">Check my values</button>
-      <button class="btn btn-primary btn-block" id="plugNext" style="display:none" onclick="dNext()">Solve it →</button>
+      <button class="btn btn-green" style="flex:1" onclick="checkPlug()">Check my values</button>
+      <button class="btn btn-primary" style="flex:1" onclick="dNext()">Next →</button>
     </div>`;
 }
-function normNum(s){ return (s||'').toString().trim().toLowerCase().replace(/[$,\s%]/g,''); }
 function checkPlug(){
   const step=TRACKS[view.track].steps[view.step];
   let allOk=true;
   step.plug.blanks.forEach(b=>{
     const el=document.getElementById('bl_'+b.key);
-    const val=normNum(el.value);
-    const ok=b.accept.map(normNum).includes(val);
+    const ok=numMatch(el.value, b.accept);
     el.classList.remove('ok','bad');
     el.classList.add(ok?'ok':'bad');
     if(!ok) allOk=false;
@@ -795,25 +834,28 @@ function checkPlug(){
   const fb=document.getElementById('fbp');
   fb.className='feedback show '+(allOk?'ok':'no');
   if(allOk){
-    fb.innerHTML='✓ Everything in the right slot. Now watch it solve.';
-    document.getElementById('plugBtn').style.display='none';
-    document.getElementById('plugNext').style.display='';
+    fb.innerHTML='✓ Everything in the right slot. Hit Next to watch it solve.';
     if(!view.dstageDone.includes(3)){ view.dstageDone.push(3); bumpXP(10); }
   } else {
-    fb.innerHTML='✗ One or more slots are off (red). Check your tags and remember to convert rates to decimals'+(step.convert?' and match monthly units.':'.');
+    fb.innerHTML='✗ One or more slots are off (red). Check your tags'+(step.convert?' and remember to match the monthly units.':'.');
   }
 }
 
 /* stage 4 — solve reveal */
 function dSolveHTML(step){
+  const chosen=step.formulas.find(f=>f.correct);
+  const header=chosen?`<div class="solve-formula"><div class="sfl">Formula we're using</div><div class="formula">${chosen.f}</div></div>`:'';
   const steps=step.solve.map((s,i)=>`
     <div class="sstep" style="animation-delay:${i*0.35}s">
       <div class="sn">Step ${i+1}</div>
+      ${s.f?`<div class="sf">${s.f}</div>`:''}
       <div class="sc">${s.c} &nbsp;<span class="sr">${s.r}</span></div>
     </div>`).join('');
   if(!view.dstageDone.includes(4)){ view.dstageDone.push(4); }
   return `<div class="stage-title">Stage 5 · Solve it step by step</div>
     <div class="stage-help">Same arithmetic every time — the hard part (choosing and plugging) is already done.</div>
+    ${problemRecap(step)}
+    ${header}
     <div class="solve">${steps}</div>
     <div class="answer-box" style="animation-delay:${step.solve.length*0.35}s;opacity:0;animation:sIn .4s forwards ${step.solve.length*0.35}s">
       <div class="albl">Answer</div>
@@ -865,7 +907,8 @@ function openTrack(ti){
   resetStepFlags();
   view.screen='step'; render(); window.scrollTo(0,0);
 }
-function resetStepFlags(){ view.answered=false; view.sel=null; view.dstage=0; view.dstageDone=[]; }
+function resetStepFlags(){ view.answered=false; view.sel=null; view.dstage=0; view.dstageDone=[];
+  view.dtags={}; view.dplug={}; view.dformulaSolved=false; view.dformulaWrong=null; }
 function pickOpt(i){
   const step=TRACKS[view.track].steps[view.step];
   view.sel=i; view.answered=true;
