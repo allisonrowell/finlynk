@@ -291,6 +291,15 @@ const ROLES={
   r :'r — interest / discount rate',
   t :'t — number of periods',
   g :'g — growth rate',
+  CF0:'CF₀ — cash flow today (the outlay)',
+  CFt:'CFₜ — a project cash flow in a later year',
+  Rev:'Revenue',
+  Cost:'Cost / operating expense',
+  Dep:'Depreciation',
+  Tax:'T — tax rate',
+  Salv:'Salvage (sale) value',
+  BV:'Book value',
+  NWC:'NWC — net working capital',
   skip:'— not plugged in directly'
 };
 function roleOptions(allowed, sel){
@@ -502,6 +511,226 @@ const TRACKS=[
      exp:'The formulas are on the sheet. Points are won by decoding the words into roles and choosing the right tool — exactly the loop you just practiced. Keep drilling these until the decision tree is automatic.'},
   ]
 },
+{
+  id:'npv', name:'Capital Budgeting — NPV & IRR', icon:'📊', color:'#5B8DEF',
+  desc:'Should you build the project? Turn a messy business story into a cash-flow timeline, discount it, and decide.',
+  steps:[
+    /* ---- 1. what NPV asks ---- */
+    {type:'lesson', title:'What NPV really asks',
+     lead:'One number decides every project.',
+     body:`<p><b>Net Present Value (NPV)</b> compares what a project is worth today against what it costs you:</p>
+     <p style="text-align:center;font-weight:800;color:#fff">NPV = (present value of all future cash flows) − (what you invest today)</p>
+     <p>Every future dollar is discounted back to today first (that's all of Track 1), then netted against the up-front cost.</p>`,
+     concept:{t:'The decision rule — memorize this', body:`<p><b>NPV &gt; 0 → accept</b> the project (it adds value). <b>NPV &lt; 0 → reject</b> it. That's the entire point of the exercise: a yes/no backed by a number.</p>`}
+    },
+    /* ---- 2. the timeline ---- */
+    {type:'lesson', title:'Build the cash-flow timeline',
+     lead:'Get the timeline right and the math is easy.',
+     body:`<p>Every capital-budgeting problem is really a <b>timeline</b>. Cash you spend is negative; cash you receive is positive.</p>`,
+     terms:[
+       ['CF₀','the net cash flow <i>today</i> — equipment + working capital, as a big <b>negative</b> number'],
+       ['CFₜ','the net cash flow in each operating year (usually positive)'],
+       ['Terminal','extra cash in the <i>final</i> year: after-tax salvage + recovered working capital'],
+     ],
+     concept:{t:'Where points are lost', body:`<p>The #1 error is a <b>sign mistake</b> — forgetting the initial cost is negative, or dropping the working-capital recovery at the end. Draw the timeline before you touch a formula.</p>`, warn:true}
+    },
+    /* ---- 3. OCF ---- */
+    {type:'lesson', title:'Operating Cash Flow — the engine',
+     lead:'This is the number people get wrong.',
+     body:`<p>Each operating year's cash flow is <b>not</b> just revenue minus costs — taxes and depreciation change it:</p>
+     <p style="text-align:center;font-weight:800;color:#fff">OCF = (Rev − Cost − Dep) × (1 − T) + Dep</p>
+     <p>Depreciation isn't cash you pay, but it lowers your taxable income — so you subtract it to get taxable profit, tax that, then <b>add it back</b> because you never actually spent it.</p>`,
+     terms:[
+       ['EBIT','Rev − Cost − Dep — your taxable operating profit'],
+       ['Tax shield','depreciation cuts your tax bill even though it isn\'t a cash cost'],
+     ],
+     concept:{t:'Same number, three ways', body:`<p>You'll see it written as <b>OCF = EBIT(1−T) + Dep</b> or <b>(Rev−Cost)(1−T) + T×Dep</b>. All identical — use whichever the problem makes easiest.</p>`}
+    },
+    /* ---- 4. terminal year ---- */
+    {type:'lesson', title:'The final year — salvage & working capital',
+     lead:'Two things people forget at the end.',
+     body:`<p>In the <b>last</b> year, on top of that year's OCF you add two things:</p>
+     <ul>
+       <li><b>After-tax salvage.</b> You're taxed only on the <i>gain</i> over book value: <b>Salvage − T × (Salvage − Book value)</b>. Sell <i>below</i> book value and the loss gives you a tax <i>refund</i> — cash goes up.</li>
+       <li><b>Working-capital recovery.</b> The NWC you tied up at the start comes back to you.</li>
+     </ul>`,
+     concept:{t:'Book value', body:`<p><b>Book value = original cost − accumulated depreciation.</b> If salvage &gt; book value you owe tax on the gain; if salvage &lt; book value the loss shields tax.</p>`}
+    },
+    /* ---- 5. decoder method + IRR ---- */
+    {type:'lesson', title:'The Decoder Method — and IRR',
+     lead:'The four-step checklist, plus NPV\'s twin.',
+     body:`<p>Once you\'ve read the story, walk this every time:</p>`,
+     tree:[
+       {c:'', q:'1. What leaves your pocket at time 0?', a:'Sum every up-front outflow — equipment + initial working capital — and make it <b>negative</b>. That\'s CF₀.'},
+       {c:'g', q:'2. What\'s the cash flow each operating year?', a:'Compute <b>OCF = (Rev − Cost − Dep)(1−T) + Dep</b>. Level revenues → same OCF each year.'},
+       {c:'gold', q:'3. Anything extra in the final year?', a:'Add <b>after-tax salvage</b> and <b>recovered working capital</b> to the last year\'s OCF.'},
+       {c:'p', q:'4. Discount everything and net it out.', a:'<b>NPV = CF₀ + Σ CFₜ/(1+r)ᵗ</b>. If NPV &gt; 0, accept.'},
+     ],
+     concept:{t:'IRR — NPV\'s twin', body:`<p><b>IRR is the discount rate that makes NPV exactly zero.</b> Decision rule: accept if <b>IRR &gt; r</b> (the required return). By hand it\'s trial-and-error / Excel <span style="font-family:monospace">=IRR()</span>; NPV is the tie-breaker when the two ever disagree.</p>`}
+    },
+    /* ---- 6. quiz: decision rule ---- */
+    {type:'quiz', q:'At the required return, a project has NPV = +$1.2 million. You should…',
+     opts:['Reject it — positive NPV means overpriced','Accept it — it adds value','Only accept if the IRR is negative','You can\'t tell without the payback period'],
+     answer:1,
+     exp:'NPV > 0 means the project is worth more than it costs at your required return — it creates value, so you accept. That is the whole decision rule.'},
+    /* ---- 7. quiz: depreciation ---- */
+    {type:'quiz', q:'Depreciation shows up in the OCF formula because…',
+     opts:['It\'s a cash cost you pay out each year','It isn\'t cash, but it shields income from taxes','It increases revenue','It is the salvage value'],
+     answer:1,
+     exp:'Depreciation is a non-cash charge. It lowers taxable income (the tax shield), so you subtract it to compute tax, then add it back because no cash actually left — the net effect is the taxes you saved.'},
+
+    /* ---- 8. DECODE #1 — NPV of given cash flows ---- */
+    {type:'decode', title:'Decode: is this project worth it?', ref:'Capital Budgeting · core NPV',
+     scenario:`A project costs <span class="num">$10,000</span> today and is expected to return <span class="num">$6,000</span> at the end of year 1 and <span class="num">$7,000</span> at the end of year 2. Your required return is <span class="num">10%</span>.`,
+     ask:`What is the project's <span class="qk">NPV</span>?`,
+     roles:['CF0','CFt','r','t'],
+     givens:[
+       {v:'$10,000', ctx:'paid up front, today', role:'CF0'},
+       {v:'$6,000 & $7,000', ctx:'received end of years 1 and 2', role:'CFt'},
+       {v:'10%', ctx:'required return / discount rate', role:'r'},
+     ],
+     formulas:[
+       {f:'NPV = CF₀ + CF₁/(1+r) + CF₂/(1+r)²', label:'Net present value (discount every flow, net the cost)', correct:true,
+        why:'Discount each future cash flow to today and add the (negative) up-front cost. That\'s NPV.'},
+       {f:'NPV = CF₁/(1+r) + CF₂/(1+r)²', label:'PV of the inflows only', correct:false,
+        why:'This forgets the $10,000 you invested. Without subtracting the cost you get present value, not NPV.'},
+       {f:'NPV = CF₀ + CF₁ + CF₂', label:'Just add the cash flows', correct:false,
+        why:'This ignores the time value of money — year-2 dollars aren\'t worth the same as today\'s. You must discount first.'},
+     ],
+     plug:{template:'NPV = <b>[CF0]</b> + <b>[CF1]</b>/(1 + <b>[r]</b>) + <b>[CF2]</b>/(1 + <b>[r2]</b>)²',
+       blanks:[
+         {key:'CF0', accept:['-10000'], tip:'CF₀ (−)'},
+         {key:'CF1', accept:['6000'], tip:'CF₁'},
+         {key:'CF2', accept:['7000'], tip:'CF₂'},
+         {key:'r',   accept:['0.10','0.1','10'], tip:'r'},
+         {key:'r2',  accept:['0.10','0.1','10'], tip:'r'},
+       ]},
+     convert:`The up-front cost is a cash <b>outflow</b>, so enter CF₀ as a <b>negative</b> number: −10,000.`,
+     solve:[
+       {f:'CF₁/(1+r)', c:'6,000 / 1.10', r:'= $5,454.55'},
+       {f:'CF₂/(1+r)²', c:'7,000 / 1.21', r:'= $5,785.12'},
+       {f:'NPV = CF₀ + PV₁ + PV₂', c:'−10,000 + 5,454.55 + 5,785.12', r:'≈ $1,239.67'},
+     ],
+     answer:'NPV ≈ $1,240',
+     meaning:'NPV is positive (~$1,240), so the project earns more than your 10% required return — accept it. The whole game is just discounting each flow and netting the cost.'},
+
+    /* ---- 9. DECODE #2 — operating cash flow ---- */
+    {type:'decode', title:'Decode: the yearly operating cash flow', ref:'Capital Budgeting · OCF',
+     scenario:`A new plant generates <span class="num">$5,500,000</span> in revenue and <span class="num">$2,500,000</span> in costs each year. Annual depreciation is <span class="num">$1,250,000</span> and the tax rate is <span class="num">35%</span>.`,
+     ask:`What is the annual <span class="qk">operating cash flow</span> (OCF)?`,
+     roles:['Rev','Cost','Dep','Tax'],
+     givens:[
+       {v:'$5,500,000', ctx:'revenue each year', role:'Rev'},
+       {v:'$2,500,000', ctx:'costs each year', role:'Cost'},
+       {v:'$1,250,000', ctx:'annual depreciation', role:'Dep'},
+       {v:'35%', ctx:'tax rate', role:'Tax'},
+     ],
+     formulas:[
+       {f:'OCF = (Rev − Cost − Dep)(1 − T) + Dep', label:'Operating cash flow', correct:true,
+        why:'Tax the operating profit (Rev−Cost−Dep), then add depreciation back because it was never a cash outflow.'},
+       {f:'OCF = Rev − Cost − Dep', label:'Earnings before tax', correct:false,
+        why:'This is pre-tax accounting profit, not cash. It ignores taxes and never adds depreciation back.'},
+       {f:'OCF = (Rev − Cost)(1 − T)', label:'After-tax profit, no depreciation', correct:false,
+        why:'This drops depreciation entirely — you lose the tax shield, which understates the real cash flow.'},
+     ],
+     plug:{template:'OCF = (<b>[Rev]</b> − <b>[Cost]</b> − <b>[Dep]</b>) × (1 − <b>[T]</b>) + <b>[Dep2]</b>',
+       blanks:[
+         {key:'Rev',  accept:['5500000'], tip:'Rev'},
+         {key:'Cost', accept:['2500000'], tip:'Cost'},
+         {key:'Dep',  accept:['1250000'], tip:'Dep'},
+         {key:'T',    accept:['0.35','35'], tip:'T'},
+         {key:'Dep2', accept:['1250000'], tip:'Dep again'},
+       ]},
+     solve:[
+       {f:'EBIT = Rev − Cost − Dep', c:'5,500,000 − 2,500,000 − 1,250,000', r:'= $1,750,000'},
+       {f:'after-tax = EBIT × (1 − T)', c:'1,750,000 × 0.65', r:'= $1,137,500'},
+       {f:'OCF = after-tax + Dep', c:'1,137,500 + 1,250,000', r:'= $2,387,500'},
+     ],
+     answer:'OCF = $2,387,500 / yr',
+     meaning:'Each operating year throws off ~$2.39M in cash — more than the $2.25M after-tax accounting profit would suggest, because depreciation shielded $1.25M from a 35% tax. That tax shield is why depreciation belongs in the formula.'},
+
+    /* ---- 10. DECODE #3 — after-tax salvage / terminal ---- */
+    {type:'decode', title:'Decode: cash at the finish line', ref:'Capital Budgeting · terminal year',
+     scenario:`At the end of the project you sell the equipment for <span class="num">$1,200,000</span>. Its book value at that point is <span class="num">$1,250,000</span>. The tax rate is <span class="num">35%</span>, and you also recover <span class="num">$500,000</span> of working capital.`,
+     ask:`What is the total <span class="qk">terminal-year</span> cash flow from these items?`,
+     roles:['Salv','BV','Tax','NWC'],
+     givens:[
+       {v:'$1,200,000', ctx:'sale (salvage) price of the equipment', role:'Salv'},
+       {v:'$1,250,000', ctx:'book value when sold', role:'BV'},
+       {v:'35%', ctx:'tax rate', role:'Tax'},
+       {v:'$500,000', ctx:'working capital tied up at the start', role:'NWC'},
+     ],
+     formulas:[
+       {f:'Terminal = [Salv − T(Salv − BV)] + NWC', label:'After-tax salvage + working-capital recovery', correct:true,
+        why:'Tax applies only to the gain over book value; then add back the working capital you recover.'},
+       {f:'Terminal = Salv + NWC', label:'Salvage plus NWC, no tax', correct:false,
+        why:'This skips the tax adjustment on the sale. Here it happens to be a small loss, but you must always run the tax step.'},
+       {f:'Terminal = Salv(1 − T) + NWC', label:'Tax the whole salvage', correct:false,
+        why:'Wrong — you\'re taxed on the gain (Salv − BV), not the entire sale price.'},
+     ],
+     plug:{template:'Terminal = ( <b>[Salv]</b> − <b>[T]</b> × ( <b>[Salv2]</b> − <b>[BV]</b> ) ) + <b>[NWC]</b>',
+       blanks:[
+         {key:'Salv',  accept:['1200000'], tip:'Salv'},
+         {key:'T',     accept:['0.35','35'], tip:'T'},
+         {key:'Salv2', accept:['1200000'], tip:'Salv'},
+         {key:'BV',    accept:['1250000'], tip:'BV'},
+         {key:'NWC',   accept:['500000'], tip:'NWC'},
+       ]},
+     solve:[
+       {f:'gain (loss) = Salv − BV', c:'1,200,000 − 1,250,000', r:'= −$50,000'},
+       {f:'tax on gain = T × (Salv − BV)', c:'0.35 × (−50,000)', r:'= −$17,500'},
+       {f:'after-tax salvage = Salv − tax', c:'1,200,000 − (−17,500)', r:'= $1,217,500'},
+       {f:'Terminal = salvage + NWC', c:'1,217,500 + 500,000', r:'= $1,717,500'},
+     ],
+     answer:'Terminal CF = $1,717,500',
+     meaning:'Selling $50k below book value created a $17,500 tax refund, so after-tax salvage is actually more than the sale price. Add the $500k of working capital coming back and the final year gets a $1.72M boost on top of its operating cash flow.'},
+
+    /* ---- 11. DECODE #4 — capstone: crab plant ---- */
+    {type:'decode', title:'Decode: the whole project', ref:'Capital Budgeting · capstone',
+     scenario:`Deadliest Catch Seafood builds a king-crab plant. Putting the pieces together: it costs <span class="num">$5.0M</span> to build plus <span class="num">$0.5M</span> of working capital up front; it earns an operating cash flow of <span class="num">$2,387,500</span> in each of years 1–3; and year 3 gets an extra <span class="num">$1,717,500</span> from after-tax salvage and recovered working capital. Discount rate <span class="num">10%</span>.`,
+     ask:`What is the project's <span class="qk">NPV</span> — build it or not?`,
+     roles:['CF0','CFt','r'],
+     givens:[
+       {v:'−$5,500,000', ctx:'time 0: $5.0M plant + $0.5M working capital', role:'CF0'},
+       {v:'$2,387,500', ctx:'years 1 & 2: operating cash flow (Decode #2)', role:'CFt'},
+       {v:'$4,105,000', ctx:'year 3: OCF $2,387,500 + terminal $1,717,500 (Decode #3)', role:'CFt'},
+       {v:'10%', ctx:'discount rate', role:'r'},
+     ],
+     formulas:[
+       {f:'NPV = CF₀ + Σ CFₜ/(1+r)ᵗ', label:'Discount every year and net the outlay', correct:true,
+        why:'You\'ve already built each year\'s net cash flow — now discount years 1–3 and add the negative CF₀.'},
+       {f:'NPV = CF₀ + Σ CFₜ', label:'Add the yearly cash flows undiscounted', correct:false,
+        why:'No discounting — this ignores that a year-3 dollar is worth less than a year-1 dollar.'},
+       {f:'NPV = Σ CFₜ/(1+r)ᵗ', label:'Discount the inflows only', correct:false,
+        why:'Forgets the $5.5M you put in at time 0. NPV must include CF₀.'},
+     ],
+     plug:{template:'NPV = <b>[CF0]</b> + <b>[CF1]</b>/(1+<b>[r]</b>) + <b>[CF2]</b>/(1+<b>[r2]</b>)² + <b>[CF3]</b>/(1+<b>[r3]</b>)³',
+       blanks:[
+         {key:'CF0', accept:['-5500000'], tip:'CF₀ (−)'},
+         {key:'CF1', accept:['2387500'], tip:'CF₁'},
+         {key:'CF2', accept:['2387500'], tip:'CF₂'},
+         {key:'CF3', accept:['4105000'], tip:'CF₃'},
+         {key:'r',   accept:['0.10','0.1','10'], tip:'r'},
+         {key:'r2',  accept:['0.10','0.1','10'], tip:'r'},
+         {key:'r3',  accept:['0.10','0.1','10'], tip:'r'},
+       ]},
+     convert:`Years 1 and 2 are just the OCF ($2,387,500). Year 3 = OCF $2,387,500 + terminal $1,717,500 = <b>$4,105,000</b>. CF₀ is negative: −$5,500,000.`,
+     solve:[
+       {f:'CF₁/(1+r)', c:'2,387,500 / 1.10', r:'= $2,170,455'},
+       {f:'CF₂/(1+r)²', c:'2,387,500 / 1.21', r:'= $1,973,140'},
+       {f:'CF₃/(1+r)³', c:'4,105,000 / 1.331', r:'= $3,084,147'},
+       {f:'NPV = CF₀ + PV₁ + PV₂ + PV₃', c:'−5,500,000 + 2,170,455 + 1,973,140 + 3,084,147', r:'≈ $1,727,742'},
+     ],
+     answer:'NPV ≈ $1.73M',
+     meaning:'NPV ≈ +$1.73M and the IRR works out to ≈ 25.4% — well above the 10% required return. Both signals say build the plant. Notice the real work was upstream: OCF and the terminal year. Once the timeline is built, NPV is just Track-1 discounting.'},
+
+    /* ---- 12. wrap quiz: IRR ---- */
+    {type:'quiz', q:'IRR is best described as…',
+     opts:['The rate that makes NPV equal zero','The project\'s profit margin','The tax rate applied to the gain','The rate the bank charges to borrow'],
+     answer:0,
+     exp:'IRR is the discount rate at which NPV = 0. You accept when IRR exceeds your required return. In the crab plant, IRR ≈ 25.4% > 10%, which agrees with the positive NPV.'},
+  ]
+},
 ];
 
 /* ════════════════════════════════════════════════════
@@ -542,36 +771,37 @@ function renderHome(){
   const doneSteps=Object.values(S.progress).reduce((a,v)=>a+v,0);
   const tracksDone=Object.keys(S.completed).length;
 
-  // MVP: TVM unlocked; the rest shown as roadmap (locked/coming soon)
+  // Built tracks (live) + roadmap tracks not yet built
   const ROADMAP=[
-    {n:'Capital Budgeting — NPV & IRR', icon:'📊', color:'#5B8DEF', desc:'Ch. 5–6 · Exercise 2'},
     {n:'Interest Rates & Bond Pricing', icon:'📉', color:'#F5B82E', desc:'Ch. 8 · Exercise 3'},
     {n:'Stock Valuation (DDM)', icon:'📈', color:'#9B7BF0', desc:'Ch. 9 · Exercise 4'},
     {n:'Risk, Return & the Cost of Capital', icon:'⚖️', color:'#EF5350', desc:'Ch. 10–13 · Exercise 5 (WACC)'},
     {n:'Integrative — EVA / MVA', icon:'🏆', color:'#26A69A', desc:'Ch. 9,13,14 · Exercise 6'},
   ];
 
-  const t=TRACKS[0], ti=0;
-  const prog=S.progress[t.id]||0, done=S.completed[t.id];
-  const pct=Math.round(prog/t.steps.length*100);
-  let pill = done?'<span class="pill pill-done">Completed</span>'
-            : prog>0?'<span class="pill pill-prog">In progress</span>'
-            : '<span class="pill pill-new">Start here</span>';
-  const liveCard=`<div class="track-card" onclick="openTrack(0)">
+  const liveCard=TRACKS.map((t,ti)=>{
+    const prog=S.progress[t.id]||0, done=S.completed[t.id];
+    const pct=Math.round(prog/t.steps.length*100);
+    const pill = done?'<span class="pill pill-done">Completed</span>'
+              : prog>0?'<span class="pill pill-prog">In progress</span>'
+              : ti===0?'<span class="pill pill-new">Start here</span>':'<span class="pill pill-new">Start</span>';
+    return `<div class="track-card" onclick="openTrack(${ti})">
       <div class="track-num" style="background:${t.color}20;color:${t.color}">${t.icon}</div>
       <div class="track-info">
-        <div class="track-name">1. ${t.name} ${pill}</div>
+        <div class="track-name">${ti+1}. ${t.name} ${pill}</div>
         <div class="track-desc">${t.desc}</div>
         <div class="track-meta">${t.steps.filter(s=>s.type==='lesson').length} lessons · ${t.steps.filter(s=>s.type==='quiz').length} quiz · ${t.steps.filter(s=>s.type==='decode').length} decoders</div>
         ${prog>0&&!done?`<div class="mini-prog"><div style="width:${pct}%"></div></div>`:''}
       </div>
       <div class="track-arrow">${done?'✓':'›'}</div>
     </div>`;
+  }).join('');
 
+  const base=TRACKS.length;
   const roadCards=ROADMAP.map((r,i)=>`<div class="track-card locked">
       <div class="track-num" style="background:${r.color}18;color:${r.color}">${r.icon}</div>
       <div class="track-info">
-        <div class="track-name">${i+2}. ${r.n} <span class="pill pill-soon">Coming soon</span></div>
+        <div class="track-name">${base+i+1}. ${r.n} <span class="pill pill-soon">Coming soon</span></div>
         <div class="track-desc">${r.desc}</div>
       </div><div class="track-arrow">›</div>
     </div>`).join('');
