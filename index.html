@@ -300,6 +300,8 @@ const ROLES={
   Salv:'Salvage (sale) value',
   BV:'Book value',
   NWC:'NWC — net working capital',
+  CR:'coupon rate (annual %)',
+  F:'F — face (par) value',
   skip:'— not plugged in directly'
 };
 function roleOptions(allowed, sel){
@@ -731,6 +733,231 @@ const TRACKS=[
      exp:'IRR is the discount rate at which NPV = 0. You accept when IRR exceeds your required return. In the crab plant, IRR ≈ 25.4% > 10%, which agrees with the positive NPV.'},
   ]
 },
+{
+  id:'bonds', name:'Interest Rates & Bond Pricing', icon:'📉', color:'#F5B82E',
+  desc:'Price a bond as what it really is — a stream of coupons plus a face value — and nail the semi-annual conversion.',
+  steps:[
+    /* ---- 1. anatomy ---- */
+    {type:'lesson', title:'A bond is two cash flows you can already price',
+     lead:'You lend money; you get paid back in two ways.',
+     body:`<p>When you buy a bond, you're lending money to the issuer. In return you receive:</p>
+     <ul>
+       <li>a stream of fixed <b>coupon</b> payments (an annuity), and</li>
+       <li>the <b>face value</b> (par) back at maturity (a lump sum).</li>
+     </ul>
+     <p>The bond's price is simply the present value of both, discounted at the market yield.</p>`,
+     terms:[
+       ['Coupon (C)','the fixed periodic interest payment — an annuity'],
+       ['Face value (F)','the principal repaid at maturity — usually $1,000'],
+       ['Yield to maturity (YTM)','the market discount rate — what investors currently demand'],
+     ],
+     concept:{t:'You already have the tools', body:`<p>Coupons are the <b>annuity</b> from Track 1. Face value is a <b>lump sum</b>. Bond pricing is just those two, added together.</p>`}
+    },
+    /* ---- 2. the formula ---- */
+    {type:'lesson', title:'The bond pricing formula',
+     lead:'Annuity of coupons + discounted face value.',
+     body:`<p style="text-align:center;font-weight:800;color:#fff">Price = C × [1 − 1/(1+r)ᵗ]/r  +  F/(1+r)ᵗ</p>
+     <p>where C = coupon per period, r = YTM per period, t = number of periods, F = face value. The first term prices the coupons (an annuity); the second prices the face value (a lump sum).</p>`,
+     concept:{t:'A zero-coupon bond', body:`<p>If a bond pays no coupons, C = 0 and the first term vanishes: <b>Price = F/(1+r)ᵗ</b> — a pure lump sum, exactly like Track 1.</p>`}
+    },
+    /* ---- 3. semi-annual trap ---- */
+    {type:'lesson', title:'The semi-annual trap',
+     lead:'Most bonds pay twice a year. Convert first.',
+     body:`<p>When coupons are paid <b>semi-annually</b>, turn everything into per-period terms <i>before</i> using the formula:</p>
+     <ul>
+       <li>Coupon: <b>C = (coupon rate × Face) / 2</b></li>
+       <li>Rate: <b>r = YTM / 2</b></li>
+       <li>Periods: <b>t = years × 2</b></li>
+     </ul>
+     <p>It's the exact same move as monthly mortgage payments in Track 1.</p>`,
+     concept:{t:'The most common bond error', body:`<p>Forgetting to convert — or converting when the coupons are actually <b>annual</b>. Always check how often coupons are paid before you plug in.</p>`, warn:true}
+    },
+    /* ---- 4. premium / par / discount ---- */
+    {type:'lesson', title:'Premium, par, or discount?',
+     lead:'Compare the coupon rate to the yield.',
+     body:`<p>The relationship between the coupon rate and the YTM tells you the price <i>before</i> you compute anything:</p>
+     <ul>
+       <li>Coupon rate &gt; YTM → <b>premium</b> (price &gt; face) — it pays more than the market demands</li>
+       <li>Coupon rate = YTM → <b>par</b> (price = face)</li>
+       <li>Coupon rate &lt; YTM → <b>discount</b> (price &lt; face)</li>
+     </ul>
+     <p>And because the yield sits in the denominator, <b>prices move opposite to yields</b> — rates up, prices down.</p>`,
+     concept:{t:'Use it as a sanity check', body:`<p>If you compute a premium bond's price <i>below</i> par, you made an arithmetic error. The coupon-vs-yield comparison catches it instantly.</p>`}
+    },
+    /* ---- 5. decoder method ---- */
+    {type:'lesson', title:'The Decoder Method — for bonds',
+     lead:'Four checks, every bond.',
+     body:`<p>Read the problem, then walk this:</p>`,
+     tree:[
+       {c:'', q:'1. Pull the four raw numbers.', a:'Coupon rate, face value (F), YTM, and years to maturity.'},
+       {c:'g', q:'2. How often are coupons paid?', a:'Semi-annual? Convert: <b>C = rate×F/2, r = YTM/2, t = years×2</b>. Annual? Use them as-is.'},
+       {c:'gold', q:'3. Premium or discount? (sanity check)', a:'Coupon rate vs YTM tells you whether the price should land above or below face — before you compute.'},
+       {c:'p', q:'4. Price both pieces and add.', a:'<b>Price = C×[1−1/(1+r)ᵗ]/r + F/(1+r)ᵗ</b> — coupons (annuity) plus face (lump sum).'},
+     ],
+     concept:{t:'YTM is the bond\'s IRR', body:`<p>The yield to maturity is exactly the bond's internal rate of return — the single rate that makes the price equal the present value of all its cash flows. Bonds tie Tracks 1 and 2 together.</p>`}
+    },
+    /* ---- 6. quiz premium ---- */
+    {type:'quiz', q:'A bond has a 6% coupon rate but its yield to maturity is 5%. It will trade at…',
+     opts:['A discount (below $1,000)','Par (exactly $1,000)','A premium (above $1,000)','You can\'t tell without computing'],
+     answer:2,
+     exp:'Coupon rate (6%) > YTM (5%) means the bond pays more than the market currently demands, so buyers bid its price above face value — a premium.'},
+    /* ---- 7. quiz semi-annual ---- */
+    {type:'quiz', q:'A 20-year bond pays coupons semi-annually. In the pricing formula, the number of periods t is…',
+     opts:['20','40','10','2'],
+     answer:1,
+     exp:'Semi-annual = 2 payments per year × 20 years = 40 periods. And the per-period rate is the annual YTM ÷ 2. Convert both together, every time.'},
+
+    /* ---- 8. DECODE #1 — coupon payment conversion ---- */
+    {type:'decode', title:'Decode: the coupon payment', ref:'Bonds · semi-annual conversion',
+     scenario:`A bond has a <span class="num">6%</span> coupon rate on a <span class="num">$1,000</span> face value, with coupons paid <span class="num">semi-annually</span>.`,
+     ask:`What is the dollar <span class="qk">coupon payment</span> each period?`,
+     roles:['CR','F'],
+     givens:[
+       {v:'6%', ctx:'the annual coupon rate', role:'CR'},
+       {v:'$1,000', ctx:'face (par) value', role:'F'},
+       {v:'semi-annually', ctx:'how often coupons are paid — a signal', role:'skip'},
+     ],
+     formulas:[
+       {f:'C = (coupon rate × Face) / 2', label:'Semi-annual coupon payment', correct:true,
+        why:'The coupon rate is annual: multiply by face for the yearly coupon, then split in half because it\'s paid twice a year.'},
+       {f:'C = coupon rate × Face', label:'Full annual coupon', correct:false,
+        why:'That\'s the whole year\'s coupon. Paid semi-annually, each individual payment is only half of it.'},
+       {f:'C = Face / coupon rate', label:'Face divided by rate', correct:false,
+        why:'Dividing face by the rate is meaningless — the coupon is a percentage OF the face value, not face divided by it.'},
+     ],
+     plug:{template:'C = ( <b>[CR]</b> × <b>[F]</b> ) / 2',
+       blanks:[
+         {key:'CR', accept:['0.06','6'], tip:'coupon rate'},
+         {key:'F',  accept:['1000'], tip:'F'},
+       ]},
+     solve:[
+       {f:'annual coupon = rate × Face', c:'0.06 × 1,000', r:'= $60'},
+       {f:'semi-annual = annual / 2', c:'60 / 2', r:'= $30'},
+     ],
+     answer:'C = $30 per period',
+     meaning:'Every six months the bondholder receives $30. This $30 is the annuity payment you\'ll discount in the price formula — get this conversion right and the rest of the bond falls into place.'},
+
+    /* ---- 9. DECODE #2 — zero-coupon = lump sum ---- */
+    {type:'decode', title:'Decode: a zero-coupon bond', ref:'Bonds · zero-coupon',
+     scenario:`A <span class="num">zero-coupon</span> bond pays <span class="num">$1,000</span> at maturity in <span class="num">10 years</span>. Its yield to maturity is <span class="num">4%</span>, and it pays no coupons at all.`,
+     ask:`What is the bond's <span class="qk">price today</span>?`,
+     roles:['F','r','t'],
+     givens:[
+       {v:'$1,000', ctx:'paid at maturity (the face value)', role:'F'},
+       {v:'4%', ctx:'yield to maturity', role:'r'},
+       {v:'10 years', ctx:'time to maturity', role:'t'},
+       {v:'zero-coupon', ctx:'no coupon payments — a signal', role:'skip'},
+     ],
+     formulas:[
+       {f:'Price = F / (1 + r)ᵗ', label:'Discount the single face-value payment', correct:true,
+        why:'With no coupons, the only cash flow is the face value at maturity — so the price is that one lump sum discounted to today. It\'s a Track-1 present value.'},
+       {f:'Price = C×[1−1/(1+r)ᵗ]/r + F/(1+r)ᵗ', label:'Full coupon-bond formula', correct:false,
+        why:'A zero has no coupons (C = 0), so the entire annuity term drops out — you\'re left with just F/(1+r)ᵗ.'},
+       {f:'Price = F × (1 + r)ᵗ', label:'Compound the face value forward', correct:false,
+        why:'That gives a future value. Pricing means discounting the future payment back to today, not growing it.'},
+     ],
+     plug:{template:'Price = <b>[F]</b> / (1 + <b>[r]</b>)<sup><b>[t]</b></sup>',
+       blanks:[
+         {key:'F', accept:['1000'], tip:'F'},
+         {key:'r', accept:['0.04','4'], tip:'r'},
+         {key:'t', accept:['10'], tip:'t'},
+       ]},
+     solve:[
+       {f:'(1 + r)ᵗ', c:'1.04¹⁰', r:'≈ 1.4802'},
+       {f:'Price = F / (1 + r)ᵗ', c:'1,000 / 1.4802', r:'≈ $675.56'},
+     ],
+     answer:'Price ≈ $675.56',
+     meaning:'A zero-coupon bond is nothing more than a single discounted lump sum — pure Track 1. You pay $675.56 today to receive $1,000 in ten years; the gap is your 4% yield compounding.'},
+
+    /* ---- 10. DECODE #3 — full semi-annual premium bond ---- */
+    {type:'decode', title:'Decode: price the whole bond', ref:'Bonds · exam-style (semi-annual)',
+     scenario:`Consider a <span class="num">20-year</span> bond with a <span class="num">6%</span> coupon rate paid <span class="num">semi-annually</span> on a <span class="num">$1,000</span> face value. Its yield to maturity is <span class="num">5%</span>.`,
+     ask:`What is the <span class="qk">price</span> of the bond?`,
+     roles:['C','r','t','F'],
+     givens:[
+       {v:'6% semi-annual', ctx:'coupon → C = 0.06×1,000/2 = $30 per period', role:'C'},
+       {v:'5%', ctx:'YTM → per-period rate = 5%/2', role:'r'},
+       {v:'20 years', ctx:'→ number of semi-annual periods = 20×2', role:'t'},
+       {v:'$1,000', ctx:'face value repaid at maturity', role:'F'},
+     ],
+     formulas:[
+       {f:'Price = C×[1 − 1/(1+r)ᵗ]/r + F/(1+r)ᵗ', label:'Coupons (annuity) + face (lump sum)', correct:true,
+        why:'A bond is an annuity of coupons plus a lump-sum face value. Discount both at the per-period YTM.'},
+       {f:'Price = C×[1 − 1/(1+r)ᵗ]/r', label:'Coupons only', correct:false,
+        why:'This prices only the coupons and forgets the $1,000 face value returned at maturity.'},
+       {f:'Price = F/(1+r)ᵗ', label:'Face value only', correct:false,
+        why:'This prices only the face value and ignores all 40 coupon payments.'},
+     ],
+     plug:{template:'Price = <b>[C]</b> × [1 − 1/(1 + <b>[r]</b>)<sup><b>[t]</b></sup>] / <b>[r2]</b> + <b>[F]</b> / (1 + <b>[r3]</b>)<sup><b>[t2]</b></sup>',
+       blanks:[
+         {key:'C',  accept:['30'], tip:'C'},
+         {key:'r',  accept:['0.025','2.5'], tip:'r/period'},
+         {key:'t',  accept:['40'], tip:'t'},
+         {key:'r2', accept:['0.025','2.5'], tip:'r/period'},
+         {key:'F',  accept:['1000'], tip:'F'},
+         {key:'r3', accept:['0.025','2.5'], tip:'r/period'},
+         {key:'t2', accept:['40'], tip:'t'},
+       ]},
+     convert:`Semi-annual — convert first: C = 6%×$1,000/2 = <b>$30</b>, per-period r = 5%/2 = <b>0.025</b>, and t = 20×2 = <b>40</b> periods.`,
+     solve:[
+       {f:'coupon C = rate × Face / 2', c:'0.06 × 1,000 / 2', r:'= $30'},
+       {f:'per-period r = YTM / 2', c:'0.05 / 2', r:'= 0.025'},
+       {f:'periods t = years × 2', c:'20 × 2', r:'= 40'},
+       {f:'annuity factor = [1 − 1/(1+r)ᵗ]/r', c:'[1 − 1/1.025⁴⁰] / 0.025', r:'≈ 25.103'},
+       {f:'coupons PV = C × factor', c:'30 × 25.103', r:'≈ $753.08'},
+       {f:'face PV = F / (1+r)ᵗ', c:'1,000 / 1.025⁴⁰', r:'≈ $372.43'},
+       {f:'Price = coupons PV + face PV', c:'753.08 + 372.43', r:'≈ $1,125.51'},
+     ],
+     answer:'Price ≈ $1,125.51',
+     meaning:'The 6% coupon beats the 5% market yield, so investors pay a premium — $1,125.51, above the $1,000 face. Whenever the coupon rate exceeds the YTM, the bond trades above par.'},
+
+    /* ---- 11. DECODE #4 — annual discount bond ---- */
+    {type:'decode', title:'Decode: a discount bond', ref:'Bonds · exam-style (annual)',
+     scenario:`A <span class="num">30-year</span> bond has a <span class="num">5%</span> coupon paid <span class="num">annually</span> on a <span class="num">$1,000</span> face value. Its yield to maturity is <span class="num">8%</span>.`,
+     ask:`What is the <span class="qk">price</span>?`,
+     roles:['C','r','t','F'],
+     givens:[
+       {v:'5% annual', ctx:'coupon → C = 0.05×1,000 = $50 (annual, no halving)', role:'C'},
+       {v:'8%', ctx:'YTM — annual, used as-is', role:'r'},
+       {v:'30 years', ctx:'annual periods, used as-is', role:'t'},
+       {v:'$1,000', ctx:'face value', role:'F'},
+     ],
+     formulas:[
+       {f:'Price = C×[1 − 1/(1+r)ᵗ]/r + F/(1+r)ᵗ', label:'Coupons (annuity) + face (lump sum)', correct:true,
+        why:'Same formula as always — coupons plus face. These coupons are annual, so no halving or doubling.'},
+       {f:'Price = C×[1 − 1/(1+r)ᵗ]/r', label:'Coupons only', correct:false,
+        why:'Forgets the $1,000 face value repaid at maturity.'},
+       {f:'Price = F/(1+r)ᵗ', label:'Face value only', correct:false,
+        why:'Ignores 30 years of coupon payments.'},
+     ],
+     plug:{template:'Price = <b>[C]</b> × [1 − 1/(1 + <b>[r]</b>)<sup><b>[t]</b></sup>] / <b>[r2]</b> + <b>[F]</b> / (1 + <b>[r3]</b>)<sup><b>[t2]</b></sup>',
+       blanks:[
+         {key:'C',  accept:['50'], tip:'C'},
+         {key:'r',  accept:['0.08','8'], tip:'r'},
+         {key:'t',  accept:['30'], tip:'t'},
+         {key:'r2', accept:['0.08','8'], tip:'r'},
+         {key:'F',  accept:['1000'], tip:'F'},
+         {key:'r3', accept:['0.08','8'], tip:'r'},
+         {key:'t2', accept:['30'], tip:'t'},
+       ]},
+     convert:`Coupons are paid <b>annually</b> here — do NOT convert. C = 5%×$1,000 = $50, r = 8% = 0.08, t = 30. (Halving is only for semi-annual bonds.)`,
+     solve:[
+       {f:'coupon C = rate × Face', c:'0.05 × 1,000', r:'= $50 (annual)'},
+       {f:'annuity factor = [1 − 1/(1+r)ᵗ]/r', c:'[1 − 1/1.08³⁰] / 0.08', r:'≈ 11.258'},
+       {f:'coupons PV = C × factor', c:'50 × 11.258', r:'≈ $562.89'},
+       {f:'face PV = F / (1+r)ᵗ', c:'1,000 / 1.08³⁰', r:'≈ $99.38'},
+       {f:'Price = coupons PV + face PV', c:'562.89 + 99.38', r:'≈ $662.27'},
+     ],
+     answer:'Price ≈ $662.27',
+     meaning:'Here the 5% coupon is below the 8% market yield, so the bond sells at a discount — $662.27, well under par. And note: coupons were annual, so no halving. Whether to convert for semi-annual is the single most common bond mistake.'},
+
+    /* ---- 12. wrap quiz ---- */
+    {type:'quiz', q:'When market interest rates rise, the prices of existing bonds…',
+     opts:['Rise','Fall','Stay the same','Always move to exactly par'],
+     answer:1,
+     exp:'Bond prices move opposite to yields. A higher discount rate lowers the present value of the bond\'s fixed coupons and face value, so its price falls.'},
+  ]
+},
 ];
 
 /* ════════════════════════════════════════════════════
@@ -773,7 +1000,6 @@ function renderHome(){
 
   // Built tracks (live) + roadmap tracks not yet built
   const ROADMAP=[
-    {n:'Interest Rates & Bond Pricing', icon:'📉', color:'#F5B82E', desc:'Ch. 8 · Exercise 3'},
     {n:'Stock Valuation (DDM)', icon:'📈', color:'#9B7BF0', desc:'Ch. 9 · Exercise 4'},
     {n:'Risk, Return & the Cost of Capital', icon:'⚖️', color:'#EF5350', desc:'Ch. 10–13 · Exercise 5 (WACC)'},
     {n:'Integrative — EVA / MVA', icon:'🏆', color:'#26A69A', desc:'Ch. 9,13,14 · Exercise 6'},
