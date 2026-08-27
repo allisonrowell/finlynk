@@ -307,6 +307,15 @@ const ROLES={
   Dt:'Dₜ — a future dividend',
   TV:'terminal value (price at end of stage 1)',
   P0:'P₀ — stock price today',
+  Rf:'Rf — risk-free rate',
+  beta:'β — beta (systematic risk)',
+  MRP:'market risk premium (E[Rm]−Rf)',
+  Re:'Rₑ — cost of equity',
+  Rd:'R_d — cost of debt (pre-tax)',
+  wE:'E/V — equity weight',
+  wD:'D/V — debt weight',
+  Eq:'E — market value of equity',
+  Dbt:'D — market value of debt',
   skip:'— not plugged in directly'
 };
 function roleOptions(allowed, sel){
@@ -1168,6 +1177,202 @@ const TRACKS=[
      exp:'The current price only makes sense under an unrealistically high 9% perpetual growth assumption. When a price requires heroic growth to justify it, that\'s a classic overvaluation signal.'},
   ]
 },
+{
+  id:'wacc', name:'Risk, Return & the Cost of Capital', icon:'⚖️', color:'#EF5350',
+  desc:'A firm\'s blended discount rate: cost of equity from CAPM, after-tax cost of debt, weighted by capital structure.',
+  steps:[
+    /* ---- 1. risk & beta ---- */
+    {type:'lesson', title:'Risk, return, and beta',
+     lead:'Higher risk demands a higher expected return.',
+     body:`<p>Investors won't hold a risky asset unless it's expected to pay more. The risk that matters is <b>systematic</b> (market-wide) risk — the part you can't diversify away — and it's measured by <b>beta (β)</b>.</p>
+     <ul>
+       <li>β = 1 → moves with the market</li>
+       <li>β &gt; 1 → amplifies market swings (riskier → higher required return)</li>
+       <li>β &lt; 1 → dampens them (safer → lower required return)</li>
+     </ul>`,
+     concept:{t:'Where this is heading', body:`<p>Beta feeds the CAPM formula, which gives a firm's <b>cost of equity</b> — the biggest piece of its overall cost of capital (WACC).</p>`}
+    },
+    /* ---- 2. CAPM ---- */
+    {type:'lesson', title:'CAPM — the cost of equity',
+     lead:'Start risk-free, add pay for risk.',
+     body:`<p>The Capital Asset Pricing Model gives the return shareholders require:</p>
+     <p style="text-align:center;font-weight:800;color:#fff">Rₑ = Rf + β × (E[Rm] − Rf)</p>
+     <p>Rf is the risk-free rate; (E[Rm] − Rf) is the <b>market risk premium</b> — the extra return for holding the market. Beta scales that premium up or down for this particular stock.</p>`,
+     concept:{t:'This IS the cost of equity', body:`<p>The number CAPM produces, Rₑ, is exactly what you plug into WACC and the dividend model as the required return on equity. Problems often hand you the market risk premium directly — then it's just Rf + β × MRP.</p>`}
+    },
+    /* ---- 3. cost of debt ---- */
+    {type:'lesson', title:'The after-tax cost of debt',
+     lead:'Debt is cheaper than it looks.',
+     body:`<p>A firm's stated (pre-tax) cost of debt is the interest rate it pays. But interest is <b>tax-deductible</b>, so the real cost is lower:</p>
+     <p style="text-align:center;font-weight:800;color:#fff">after-tax cost of debt = R_d × (1 − T)</p>
+     <p>Every dollar of interest cuts the tax bill, so the company only truly bears (1 − T) of it.</p>`,
+     concept:{t:'The tax shield', body:`<p>This deduction — the interest tax shield — is why debt is the cheapest source of financing, and why adding some debt can lower a firm's WACC.</p>`}
+    },
+    /* ---- 4. WACC ---- */
+    {type:'lesson', title:'WACC — the blended rate',
+     lead:'Weight each financing source by its share of the firm.',
+     body:`<p>A firm funds itself with equity and debt, each with its own cost. WACC blends them by their weights:</p>
+     <p style="text-align:center;font-weight:800;color:#fff">WACC = (E/V)·Rₑ + (D/V)·R_d·(1 − T)</p>
+     <p>where V = E + D, E/V is the equity weight, D/V the debt weight (add a (P/V)·Rp term if there's preferred stock). Debt gets the (1−T) tax shield; equity does not.</p>`,
+     concept:{t:'Always market values', body:`<p>The weights E/V and D/V come from <b>market values</b>, not the balance sheet's book values. WACC is the discount rate you use to value the firm's projects.</p>`}
+    },
+    /* ---- 5. decoder method ---- */
+    {type:'lesson', title:'The Decoder Method — for WACC',
+     lead:'Four pieces, then blend.',
+     body:`<p>Every WACC problem is these four moves:</p>`,
+     tree:[
+       {c:'', q:'1. Cost of equity?', a:'<b>CAPM: Rₑ = Rf + β × (market risk premium)</b>.'},
+       {c:'g', q:'2. Cost of debt, after tax?', a:'<b>R_d × (1 − T)</b> — apply the interest tax shield.'},
+       {c:'gold', q:'3. Weights?', a:'From market values: <b>E/V = E/(E+D)</b> and <b>D/V = D/(E+D)</b> (they sum to 1).'},
+       {c:'p', q:'4. Blend.', a:'<b>WACC = (E/V)·Rₑ + (D/V)·R_d·(1−T)</b>.'},
+     ],
+     concept:{t:'The big picture', body:`<p>WACC pulls the whole course together: CAPM (this track) for equity, bond-style yields for debt, all blended into the one discount rate that values a company.</p>`}
+    },
+    /* ---- 6. quiz CAPM ---- */
+    {type:'quiz', q:'A stock has β = 1.5, the risk-free rate is 3%, and the market risk premium is 5%. Its cost of equity is…',
+     opts:['8.0%','10.5%','7.5%','4.5%'],
+     answer:1,
+     exp:'CAPM: Rₑ = Rf + β×MRP = 3% + 1.5×5% = 3% + 7.5% = 10.5%. Beta above 1 pushes the required return above the market\'s.'},
+    /* ---- 7. quiz tax shield ---- */
+    {type:'quiz', q:'Why is the cost of debt multiplied by (1 − T) in WACC?',
+     opts:['Debt is riskier than equity','Interest is tax-deductible, so debt\'s true cost is lower','Dividends are tax-deductible','To convert an annual rate to monthly'],
+     answer:1,
+     exp:'Interest payments reduce taxable income, so the firm recovers T of every interest dollar. The real cost borne is R_d × (1 − T) — the interest tax shield.'},
+
+    /* ---- 8. DECODE #1 — cost of equity (CAPM) ---- */
+    {type:'decode', title:'Decode: the cost of equity', ref:'WACC · CAPM',
+     scenario:`Lockheed Martin has a beta of <span class="num">0.61</span>. The risk-free rate is <span class="num">3%</span> and the market risk premium is <span class="num">5%</span>.`,
+     ask:`What is LMT's <span class="qk">cost of equity</span>?`,
+     roles:['beta','Rf','MRP'],
+     givens:[
+       {v:'0.61', ctx:'the stock\'s beta (β)', role:'beta'},
+       {v:'3%', ctx:'risk-free rate', role:'Rf'},
+       {v:'5%', ctx:'market risk premium (E[Rm] − Rf)', role:'MRP'},
+     ],
+     formulas:[
+       {f:'Rₑ = Rf + β × (market risk premium)', label:'CAPM', correct:true,
+        why:'Start with the risk-free rate and add compensation for the stock\'s systematic risk: beta times the market risk premium.'},
+       {f:'Rₑ = Rf × β + (market risk premium)', label:'Risk-free scaled by beta', correct:false,
+        why:'Wrong structure — beta scales the risk premium, not the risk-free rate. It\'s Rf + β×MRP.'},
+       {f:'Rₑ = Rf + (market risk premium)', label:'No beta', correct:false,
+        why:'This prices every stock identically. Beta is what tailors the market premium to this stock\'s risk.'},
+     ],
+     plug:{template:'Rₑ = <b>[Rf]</b> + <b>[beta]</b> × <b>[MRP]</b>',
+       blanks:[
+         {key:'Rf',   accept:['0.03','3'], tip:'Rf'},
+         {key:'beta', accept:['0.61'], tip:'β'},
+         {key:'MRP',  accept:['0.05','5'], tip:'MRP'},
+       ]},
+     solve:[
+       {f:'β × market risk premium', c:'0.61 × 0.05', r:'= 0.0305'},
+       {f:'Rₑ = Rf + β×MRP', c:'0.03 + 0.0305', r:'= 0.0605 = 6.05%'},
+     ],
+     answer:'Rₑ = 6.05%',
+     meaning:'LMT\'s cost of equity is 6.05% — modest because its beta (0.61) is well below 1, so it\'s less risky than the market. This is the single biggest input to WACC.'},
+
+    /* ---- 9. DECODE #2 — after-tax cost of debt ---- */
+    {type:'decode', title:'Decode: the after-tax cost of debt', ref:'WACC · tax shield',
+     scenario:`LMT\'s pre-tax cost of debt is <span class="num">4%</span>, and its corporate tax rate is <span class="num">35%</span>.`,
+     ask:`What is the <span class="qk">after-tax</span> cost of debt?`,
+     roles:['Rd','Tax'],
+     givens:[
+       {v:'4%', ctx:'pre-tax cost of debt (R_d)', role:'Rd'},
+       {v:'35%', ctx:'corporate tax rate', role:'Tax'},
+     ],
+     formulas:[
+       {f:'after-tax R_d = R_d × (1 − T)', label:'Apply the interest tax shield', correct:true,
+        why:'Interest is tax-deductible, so the firm only truly bears (1 − T) of each interest dollar.'},
+       {f:'after-tax R_d = R_d × T', label:'Rate times tax rate', correct:false,
+        why:'That gives the tax SAVING, not the cost you still bear. You keep paying the (1 − T) portion.'},
+       {f:'after-tax R_d = R_d + T', label:'Rate plus tax rate', correct:false,
+        why:'Taxes lower the cost of debt, they don\'t raise it — the deduction is a benefit, not a surcharge.'},
+     ],
+     plug:{template:'after-tax R_d = <b>[Rd]</b> × (1 − <b>[T]</b>)',
+       blanks:[
+         {key:'Rd', accept:['0.04','4'], tip:'R_d'},
+         {key:'T',  accept:['0.35','35'], tip:'T'},
+       ]},
+     solve:[
+       {f:'1 − T', c:'1 − 0.35', r:'= 0.65'},
+       {f:'R_d × (1 − T)', c:'0.04 × 0.65', r:'= 0.026 = 2.60%'},
+     ],
+     answer:'after-tax R_d = 2.60%',
+     meaning:'After the tax shield, debt costs only 2.60% — well under the 4% coupon. Tax deductibility of interest is why debt is the cheapest financing a firm has.'},
+
+    /* ---- 10. DECODE #3 — capital-structure weight ---- */
+    {type:'decode', title:'Decode: the capital-structure weight', ref:'WACC · weights',
+     scenario:`A firm is financed with <span class="num">$920 million</span> of equity and <span class="num">$80 million</span> of debt, both at market value.`,
+     ask:`What is the <span class="qk">equity weight</span>, E/V, used in WACC?`,
+     roles:['Eq','Dbt'],
+     givens:[
+       {v:'$920 million', ctx:'market value of equity (E)', role:'Eq'},
+       {v:'$80 million', ctx:'market value of debt (D)', role:'Dbt'},
+     ],
+     formulas:[
+       {f:'E/V = E / (E + D)', label:'Equity as a share of total firm value', correct:true,
+        why:'A weight is equity divided by total value V = E + D. The equity and debt weights sum to 1.'},
+       {f:'E/V = E / D', label:'Equity-to-debt ratio', correct:false,
+        why:'That\'s the E/D ratio (11.5), not a weight. Weights are out of total value (E + D) and must fall between 0 and 1.'},
+       {f:'E/V = D / (E + D)', label:'Debt over total', correct:false,
+        why:'That\'s the DEBT weight. For the equity weight, equity goes in the numerator.'},
+     ],
+     plug:{template:'E/V = <b>[Eq]</b> / ( <b>[Eq2]</b> + <b>[Dbt]</b> )',
+       blanks:[
+         {key:'Eq',  accept:['920'], tip:'E'},
+         {key:'Eq2', accept:['920'], tip:'E'},
+         {key:'Dbt', accept:['80'], tip:'D'},
+       ]},
+     solve:[
+       {f:'V = E + D', c:'920 + 80', r:'= $1,000M'},
+       {f:'E/V = E / (E + D)', c:'920 / 1,000', r:'= 0.92 = 92%'},
+     ],
+     answer:'E/V = 92%  (so D/V = 8%)',
+     meaning:'Equity funds 92% of the firm and debt 8% (D/V = 1 − E/V). These market-value weights decide how much each financing cost counts in WACC — always use market values, never book.'},
+
+    /* ---- 11. DECODE #4 — WACC capstone ---- */
+    {type:'decode', title:'Decode: the whole WACC', ref:'WACC · capstone (Lockheed Martin)',
+     scenario:`Put it together for Lockheed Martin: cost of equity <span class="num">6.05%</span>, pre-tax cost of debt <span class="num">4%</span>, tax rate <span class="num">35%</span>, and a capital structure of <span class="num">92.59%</span> equity / <span class="num">7.41%</span> debt (from D/E = 0.08).`,
+     ask:`What is LMT's <span class="qk">WACC</span>?`,
+     roles:['Re','Rd','Tax','wE','wD'],
+     givens:[
+       {v:'6.05%', ctx:'cost of equity Rₑ (CAPM, Decode #1)', role:'Re'},
+       {v:'4%', ctx:'pre-tax cost of debt R_d', role:'Rd'},
+       {v:'35%', ctx:'tax rate', role:'Tax'},
+       {v:'92.59%', ctx:'equity weight E/V', role:'wE'},
+       {v:'7.41%', ctx:'debt weight D/V', role:'wD'},
+     ],
+     formulas:[
+       {f:'WACC = (E/V)·Rₑ + (D/V)·R_d·(1 − T)', label:'Weighted blend, debt after tax', correct:true,
+        why:'Weight each financing cost by its share of the firm, and apply the tax shield to debt only.'},
+       {f:'WACC = (E/V)·Rₑ + (D/V)·R_d', label:'No tax shield on debt', correct:false,
+        why:'Forgets that debt\'s cost is after-tax. The debt term needs the (1 − T) factor.'},
+       {f:'WACC = Rₑ + R_d·(1 − T)', label:'Add the two costs', correct:false,
+        why:'Unweighted — you must scale each cost by its capital-structure weight, not just sum them.'},
+     ],
+     plug:{template:'WACC = <b>[wE]</b> × <b>[Re]</b> + <b>[wD]</b> × <b>[Rd]</b> × (1 − <b>[T]</b>)',
+       blanks:[
+         {key:'wE', accept:['0.9259','92.59'], tip:'E/V'},
+         {key:'Re', accept:['0.0605','6.05'], tip:'Rₑ'},
+         {key:'wD', accept:['0.0741','7.41'], tip:'D/V'},
+         {key:'Rd', accept:['0.04','4'], tip:'R_d'},
+         {key:'T',  accept:['0.35','35'], tip:'T'},
+       ]},
+     solve:[
+       {f:'equity part = (E/V)·Rₑ', c:'0.9259 × 0.0605', r:'= 0.05602'},
+       {f:'after-tax debt = R_d·(1−T)', c:'0.04 × 0.65', r:'= 0.026'},
+       {f:'debt part = (D/V)·R_d(1−T)', c:'0.0741 × 0.026', r:'= 0.00193'},
+       {f:'WACC = equity part + debt part', c:'0.05602 + 0.00193', r:'≈ 0.0579 = 5.79%'},
+     ],
+     answer:'WACC ≈ 5.79%',
+     meaning:'LMT\'s blended cost of capital is about 5.79% — the discount rate for valuing its projects. Equity is 92.6% of the firm, so the 6.05% cost of equity dominates; a sliver of cheap, tax-shielded debt nudges it down.'},
+
+    /* ---- 12. wrap quiz ---- */
+    {type:'quiz', q:'In WACC, the weights E/V and D/V should be based on…',
+     opts:['Book values from the balance sheet','Market values of equity and debt','An equal 50/50 split','The corporate tax rate'],
+     answer:1,
+     exp:'Always market values — they reflect what the equity and debt are actually worth today, which is what determines each source\'s true share of financing.'},
+  ]
+},
 ];
 
 /* ════════════════════════════════════════════════════
@@ -1210,7 +1415,6 @@ function renderHome(){
 
   // Built tracks (live) + roadmap tracks not yet built
   const ROADMAP=[
-    {n:'Risk, Return & the Cost of Capital', icon:'⚖️', color:'#EF5350', desc:'Ch. 10–13 · Exercise 5 (WACC)'},
     {n:'Integrative — EVA / MVA', icon:'🏆', color:'#26A69A', desc:'Ch. 9,13,14 · Exercise 6'},
   ];
 
