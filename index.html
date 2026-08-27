@@ -316,6 +316,13 @@ const ROLES={
   wD:'D/V — debt weight',
   Eq:'E — market value of equity',
   Dbt:'D — market value of debt',
+  EBIT:'EBIT — operating profit',
+  NOPAT:'NOPAT — after-tax operating profit',
+  CapEx:'CapEx — capital spending',
+  dNWC:'ΔNWC — change in net working capital',
+  IC:'invested capital',
+  WACC:'WACC — cost of capital',
+  FCF:'FCF — free cash flow',
   skip:'— not plugged in directly'
 };
 function roleOptions(allowed, sel){
@@ -1373,6 +1380,211 @@ const TRACKS=[
      exp:'Always market values — they reflect what the equity and debt are actually worth today, which is what determines each source\'s true share of financing.'},
   ]
 },
+{
+  id:'integ', name:'Integrative — Valuation, EVA & MVA', icon:'🏆', color:'#26A69A',
+  desc:'The finale: value a whole company from its free cash flows, and measure the value it creates with EVA and MVA.',
+  steps:[
+    /* ---- 1. the integrative picture ---- */
+    {type:'lesson', title:'Putting it all together',
+     lead:'Everything you\'ve learned, aimed at one company.',
+     body:`<p>This track values an <b>entire firm</b> — and it reuses every earlier track:</p>
+     <ul>
+       <li>Compute the firm's <b>free cash flow</b> (built from Track 2's operating cash flow).</li>
+       <li>Discount those cash flows — a two-stage DCF, exactly like Track 4's dividend model.</li>
+       <li>The discount rate is the firm's <b>WACC</b> from Track 5.</li>
+       <li>Then measure value creation with <b>EVA</b> and <b>MVA</b>.</li>
+     </ul>`,
+     concept:{t:'Same engine, bigger object', body:`<p>Valuing a company is the same present-value machine you've used all along — now applied to the firm's total free cash flow instead of one dividend or one project.</p>`}
+    },
+    /* ---- 2. free cash flow ---- */
+    {type:'lesson', title:'Free Cash Flow',
+     lead:'The cash left for all investors.',
+     body:`<p>Free cash flow starts from operating cash flow, then subtracts what the firm must reinvest:</p>
+     <p style="text-align:center;font-weight:800;color:#fff">FCF = EBIT(1 − T) + Dep − CapEx − ΔNWC</p>
+     <p>EBIT(1−T) is <b>NOPAT</b>. Add back non-cash depreciation, then subtract capital spending (CapEx) and any increase in net working capital.</p>`,
+     concept:{t:'It builds on Track 2', body:`<p>The first two terms — EBIT(1−T) + Dep — are exactly Track 2's operating cash flow. FCF is just OCF minus the reinvestment (CapEx + ΔNWC).</p>`}
+    },
+    /* ---- 3. EVA ---- */
+    {type:'lesson', title:'EVA — did you beat your cost of capital?',
+     lead:'Accounting profit isn\'t enough.',
+     body:`<p>Economic Value Added asks whether a firm earned more than the cost of the capital tied up in it:</p>
+     <p style="text-align:center;font-weight:800;color:#fff">EVA = NOPAT − (Invested Capital × WACC)</p>
+     <p>The second term is the <b>capital charge</b> — what investors demanded on the capital they put in. Positive EVA = value created; negative = value destroyed, even if accounting profit looks positive.</p>`,
+     concept:{t:'Uses your WACC', body:`<p>The capital charge is Invested Capital × WACC — the very WACC you computed in Track 5. EVA is where the cost of capital finally bites.</p>`}
+    },
+    /* ---- 4. MVA + valuation ---- */
+    {type:'lesson', title:'MVA and valuing the firm',
+     lead:'Cumulative value, and the whole enterprise.',
+     body:`<p><b>MVA (Market Value Added)</b> is the total value a firm has created over its life:</p>
+     <p style="text-align:center;font-weight:800;color:#fff">MVA = Market Value − Invested Capital</p>
+     <p>And a company's <b>enterprise value</b> is the present value of all its future free cash flows — usually a two-stage DCF (grow explicitly for a few years, then a terminal value), discounted at WACC.</p>`,
+     concept:{t:'EVA and MVA connect', body:`<p>MVA equals the present value of all future EVAs. A firm that consistently earns positive EVA builds MVA — the market rewards earning above the cost of capital.</p>`}
+    },
+    /* ---- 5. decoder method ---- */
+    {type:'lesson', title:'The Decoder Method — integrative',
+     lead:'The full pipeline, end to end.',
+     body:`<p>An integrative problem chains the whole course:</p>`,
+     tree:[
+       {c:'', q:'1. Free cash flow?', a:'<b>FCF = EBIT(1−T) + Dep − CapEx − ΔNWC</b>. Watch the ΔNWC sign.'},
+       {c:'g', q:'2. Growth pattern?', a:'Usually two-stage: explicit growth for N years, then constant growth forever.'},
+       {c:'gold', q:'3. Discount rate?', a:'The firm\'s <b>WACC</b> (Track 5).'},
+       {c:'p', q:'4. Value it — or measure creation.', a:'Enterprise value = <b>Σ FCFₜ/(1+r)ᵗ + TV/(1+r)ᴺ</b>. Or measure with <b>EVA = NOPAT − IC×WACC</b>.'},
+     ],
+     concept:{t:'You\'ve arrived', body:`<p>If you can run this pipeline, you can value a company — the ultimate goal of the whole course. Every piece came from an earlier track.</p>`}
+    },
+    /* ---- 6. quiz FCF ---- */
+    {type:'quiz', q:'Free cash flow differs from operating cash flow because FCF also subtracts…',
+     opts:['Interest and dividends','Capital spending and the increase in working capital','Depreciation','The tax rate'],
+     answer:1,
+     exp:'FCF = OCF − CapEx − ΔNWC. Operating cash flow becomes free cash flow only after you subtract the reinvestment the firm needs — capital expenditures and any growth in working capital.'},
+    /* ---- 7. quiz EVA ---- */
+    {type:'quiz', q:'A firm reports positive accounting profit but negative EVA. This means…',
+     opts:['It made an accounting error','It earned less than its cost of capital — destroying value','It has no debt','Its taxes were too high'],
+     answer:1,
+     exp:'Negative EVA means NOPAT fell short of the capital charge (Invested Capital × WACC). The firm earned a profit, but not enough to cover what investors required on their capital — so it destroyed value.'},
+
+    /* ---- 8. DECODE #1 — NOPAT ---- */
+    {type:'decode', title:'Decode: NOPAT', ref:'Integrative · after-tax operating profit',
+     scenario:`Clorox reported EBIT of <span class="num">$964 million</span>. Its corporate tax rate is <span class="num">35%</span>.`,
+     ask:`What is Clorox's <span class="qk">NOPAT</span> (net operating profit after tax)?`,
+     roles:['EBIT','Tax'],
+     givens:[
+       {v:'$964M', ctx:'earnings before interest and taxes (EBIT)', role:'EBIT'},
+       {v:'35%', ctx:'corporate tax rate', role:'Tax'},
+     ],
+     formulas:[
+       {f:'NOPAT = EBIT × (1 − T)', label:'Tax the operating profit', correct:true,
+        why:'NOPAT is operating profit taxed as if the firm had no debt — EBIT times (1 − T).'},
+       {f:'NOPAT = EBIT × T', label:'EBIT times the tax rate', correct:false,
+        why:'That gives the tax bill, not the profit left after tax. You keep the (1 − T) portion.'},
+       {f:'NOPAT = EBIT', label:'Ignore taxes', correct:false,
+        why:'NOPAT is after tax — you must reduce EBIT by the taxes on it.'},
+     ],
+     plug:{template:'NOPAT = <b>[EBIT]</b> × (1 − <b>[T]</b>)',
+       blanks:[
+         {key:'EBIT', accept:['964'], tip:'EBIT'},
+         {key:'T',    accept:['0.35','35'], tip:'T'},
+       ]},
+     solve:[
+       {f:'1 − T', c:'1 − 0.35', r:'= 0.65'},
+       {f:'NOPAT = EBIT × (1 − T)', c:'964 × 0.65', r:'= $626.6M'},
+     ],
+     answer:'NOPAT = $626.6M',
+     meaning:'NOPAT is operating profit after tax but before financing — the profit the business itself throws off. It\'s the launch point for both free cash flow and EVA.'},
+
+    /* ---- 9. DECODE #2 — free cash flow ---- */
+    {type:'decode', title:'Decode: free cash flow', ref:'Integrative · FCF',
+     scenario:`Clorox has NOPAT of <span class="num">$626.6M</span>. Depreciation was <span class="num">$180M</span>, capital expenditures were <span class="num">$138M</span>, and net working capital fell by <span class="num">$30M</span> over the year.`,
+     ask:`What is Clorox's <span class="qk">free cash flow</span>?`,
+     roles:['NOPAT','Dep','CapEx','dNWC'],
+     givens:[
+       {v:'$626.6M', ctx:'NOPAT = EBIT(1−T), from Decode #1', role:'NOPAT'},
+       {v:'$180M', ctx:'depreciation (a non-cash charge)', role:'Dep'},
+       {v:'$138M', ctx:'capital expenditures', role:'CapEx'},
+       {v:'−$30M', ctx:'ΔNWC — working capital FELL, so the change is negative', role:'dNWC'},
+     ],
+     formulas:[
+       {f:'FCF = NOPAT + Dep − CapEx − ΔNWC', label:'Add back depreciation, subtract reinvestment', correct:true,
+        why:'Start from after-tax operating profit, add back non-cash depreciation, then subtract what the firm reinvests: capex and any rise in working capital.'},
+       {f:'FCF = NOPAT + Dep + CapEx + ΔNWC', label:'Add everything', correct:false,
+        why:'CapEx and a rise in ΔNWC are cash OUT — they must be subtracted, not added.'},
+       {f:'FCF = NOPAT − Dep − CapEx', label:'Subtract depreciation, drop NWC', correct:false,
+        why:'Depreciation is added back (it\'s non-cash), and you can\'t ignore the working-capital change.'},
+     ],
+     plug:{template:'FCF = <b>[NOPAT]</b> + <b>[Dep]</b> − <b>[CapEx]</b> − <b>[dNWC]</b>',
+       blanks:[
+         {key:'NOPAT', accept:['626.6'], tip:'NOPAT'},
+         {key:'Dep',   accept:['180'], tip:'Dep'},
+         {key:'CapEx', accept:['138'], tip:'CapEx'},
+         {key:'dNWC',  accept:['-30'], tip:'ΔNWC (−)'},
+       ]},
+     convert:`NWC fell from $42M to $12M, so ΔNWC = 12 − 42 = <b>−$30M</b>. A falling working capital releases cash, so subtracting a negative adds it back: − (−30) = +30.`,
+     solve:[
+       {f:'add back non-cash Dep', c:'626.6 + 180', r:'= 806.6'},
+       {f:'subtract CapEx', c:'806.6 − 138', r:'= 668.6'},
+       {f:'subtract ΔNWC', c:'668.6 − (−30)', r:'= $698.6M'},
+     ],
+     answer:'FCF = $698.6M',
+     meaning:'Free cash flow is what\'s left for ALL investors after the firm reinvests. Because working capital fell, it released $30M — subtracting a negative adds it back. This FCF is what you discount to value the whole firm.'},
+
+    /* ---- 10. DECODE #3 — EVA ---- */
+    {type:'decode', title:'Decode: EVA', ref:'Integrative · economic value added',
+     scenario:`A company generates NOPAT of <span class="num">$600 million</span>. It has invested capital of <span class="num">$5,000 million</span>, and its WACC is <span class="num">9%</span>.`,
+     ask:`What is the company's <span class="qk">EVA</span>?`,
+     roles:['NOPAT','IC','WACC'],
+     givens:[
+       {v:'$600M', ctx:'after-tax operating profit (NOPAT)', role:'NOPAT'},
+       {v:'$5,000M', ctx:'invested capital ($5 billion)', role:'IC'},
+       {v:'9%', ctx:'weighted average cost of capital', role:'WACC'},
+     ],
+     formulas:[
+       {f:'EVA = NOPAT − (Invested Capital × WACC)', label:'Profit minus the capital charge', correct:true,
+        why:'Subtract the capital charge — what investors required on the capital tied up — from after-tax operating profit.'},
+       {f:'EVA = NOPAT − Invested Capital', label:'Subtract all the capital', correct:false,
+        why:'You subtract the CHARGE on the capital (IC × WACC), not the entire capital balance.'},
+       {f:'EVA = NOPAT × WACC', label:'Profit times WACC', correct:false,
+        why:'That has no meaning here. EVA is profit minus the cost of the capital used to earn it.'},
+     ],
+     plug:{template:'EVA = <b>[NOPAT]</b> − ( <b>[IC]</b> × <b>[WACC]</b> )',
+       blanks:[
+         {key:'NOPAT', accept:['600'], tip:'NOPAT'},
+         {key:'IC',    accept:['5000'], tip:'IC'},
+         {key:'WACC',  accept:['0.09','9'], tip:'WACC'},
+       ]},
+     solve:[
+       {f:'capital charge = IC × WACC', c:'5,000 × 0.09', r:'= $450M'},
+       {f:'EVA = NOPAT − capital charge', c:'600 − 450', r:'= $150M'},
+     ],
+     answer:'EVA = $150M',
+     meaning:'EVA is positive ($150M), so the company earned $150M MORE than the cost of the capital tied up in it — real value created this year. A negative EVA would mean destroying value despite a positive accounting profit. The capital charge uses your Track-5 WACC.'},
+
+    /* ---- 11. DECODE #4 — integrative capstone (value the firm) ---- */
+    {type:'decode', title:'Decode: value the whole company', ref:'Integrative · capstone (Clorox DCF)',
+     scenario:`Value Clorox. Its free cash flow of $698.6M is forecast to grow <span class="num">5%</span> for 3 years, then <span class="num">3%</span> forever. The WACC is <span class="num">5.9%</span>. Grown out: FCF₁=<span class="num">$733.5M</span>, FCF₂=<span class="num">$770.2M</span>, FCF₃=<span class="num">$808.7M</span>, and the terminal value at year 3 is <span class="num">$28,723M</span>.`,
+     ask:`What is Clorox's <span class="qk">enterprise value</span>?`,
+     roles:['FCF','TV','r'],
+     givens:[
+       {v:'$733.5M', ctx:'year-1 FCF (698.6 × 1.05)', role:'FCF'},
+       {v:'$770.2M', ctx:'year-2 FCF', role:'FCF'},
+       {v:'$808.7M', ctx:'year-3 FCF', role:'FCF'},
+       {v:'$28,723M', ctx:'terminal value at end of year 3 = FCF₄/(WACC − g)', role:'TV'},
+       {v:'5.9%', ctx:'discount rate (WACC)', role:'r'},
+     ],
+     formulas:[
+       {f:'EV = FCF₁/(1+r) + FCF₂/(1+r)² + (FCF₃ + TV₃)/(1+r)³', label:'Discount each FCF + the terminal value', correct:true,
+        why:'Discount the explicit free cash flows and the terminal value (which sits at year 3, alongside FCF₃) back at the WACC.'},
+       {f:'EV = FCF₁ + FCF₂ + FCF₃ + TV₃', label:'Add them undiscounted', correct:false,
+        why:'No discounting — future cash isn\'t worth today\'s. Every term must be discounted at the WACC.'},
+       {f:'EV = FCF₁/(1+r) + FCF₂/(1+r)² + FCF₃/(1+r)³', label:'Explicit FCFs only', correct:false,
+        why:'Drops everything past year 3. The terminal value captures all later cash flows — you must include it.'},
+     ],
+     plug:{template:'EV = <b>[F1]</b>/(1+<b>[r]</b>) + <b>[F2]</b>/(1+<b>[r2]</b>)² + ( <b>[F3]</b> + <b>[TV]</b> )/(1+<b>[r3]</b>)³',
+       blanks:[
+         {key:'F1', accept:['733.5'], tip:'FCF₁'},
+         {key:'r',  accept:['0.059','5.9'], tip:'r'},
+         {key:'F2', accept:['770.2'], tip:'FCF₂'},
+         {key:'r2', accept:['0.059','5.9'], tip:'r'},
+         {key:'F3', accept:['808.7'], tip:'FCF₃'},
+         {key:'TV', accept:['28723'], tip:'TV₃'},
+         {key:'r3', accept:['0.059','5.9'], tip:'r'},
+       ]},
+     convert:`Grow the FCF: FCF₁=698.6×1.05=<b>$733.5M</b>, FCF₂=<b>$770.2M</b>, FCF₃=<b>$808.7M</b>. Then FCF₄=808.7×1.03=$832.9M, so TV₃ = FCF₄/(WACC−g) = 832.9/(0.059−0.03) = <b>$28,723M</b>.`,
+     solve:[
+       {f:'FCF₁/(1+r)', c:'733.5 / 1.059', r:'= $692.6M'},
+       {f:'FCF₂/(1+r)²', c:'770.2 / 1.1215', r:'= $686.8M'},
+       {f:'(FCF₃ + TV₃)/(1+r)³', c:'(808.7 + 28,723) / 1.1876', r:'≈ $24,866M'},
+       {f:'EV = sum of the three', c:'692.6 + 686.8 + 24,866', r:'≈ $26,245M'},
+     ],
+     answer:'EV ≈ $26.2 billion',
+     meaning:'Clorox is worth about $26.2 billion — the present value of its future free cash flows discounted at WACC. This is the grand finale: free cash flow (this track) + two-stage discounting (Track 4) + WACC (Track 5), combined into one company valuation. You\'ve now run the entire pipeline.'},
+
+    /* ---- 12. wrap quiz ---- */
+    {type:'quiz', q:'A company\'s enterprise value is best described as…',
+     opts:['Its accounting book value','The present value of its future free cash flows','Last year\'s net income','Its total debt'],
+     answer:1,
+     exp:'Enterprise value is the present value of all the firm\'s future free cash flows, discounted at its WACC — the same discounting logic from every track, applied to the whole company.'},
+  ]
+},
 ];
 
 /* ════════════════════════════════════════════════════
@@ -1414,9 +1626,7 @@ function renderHome(){
   const tracksDone=Object.keys(S.completed).length;
 
   // Built tracks (live) + roadmap tracks not yet built
-  const ROADMAP=[
-    {n:'Integrative — EVA / MVA', icon:'🏆', color:'#26A69A', desc:'Ch. 9,13,14 · Exercise 6'},
-  ];
+  const ROADMAP=[];
 
   const liveCard=TRACKS.map((t,ti)=>{
     const prog=S.progress[t.id]||0, done=S.completed[t.id];
