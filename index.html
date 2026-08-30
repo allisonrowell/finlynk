@@ -274,6 +274,17 @@ body{
 .drill-input.bad{border-color:var(--red);color:var(--redL)}
 .hint-box{background:rgba(91,141,239,.08);border:1px solid rgba(91,141,239,.22);border-radius:10px;padding:11px 14px;margin-top:10px;font-weight:700;color:#fff;text-align:center}
 .drill-count{display:inline-flex;align-items:center;gap:5px;font-weight:800;color:var(--teal)}
+.drill-tools{display:flex;gap:8px;flex-wrap:wrap}
+/* built-in calculator */
+.calc{margin-top:12px;background:#0F1522;border:1px solid var(--line);border-radius:12px;padding:12px}
+.calc-display{background:#0A0E17;border:1px solid var(--line);border-radius:8px;padding:12px 14px;text-align:right;font-family:ui-monospace,Menlo,monospace;font-size:1.2rem;font-weight:700;color:#fff;margin-bottom:10px;min-height:46px;overflow-x:auto;white-space:nowrap}
+.calc-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:7px}
+.calc-key{font-family:'Inter';font-weight:700;font-size:1.02rem;padding:14px 0;border-radius:9px;border:none;cursor:pointer;background:var(--panel2);color:var(--text);transition:filter .1s,transform .05s}
+.calc-key:hover{filter:brightness(1.3)}
+.calc-key:active{transform:scale(.95)}
+.ck-op{background:rgba(91,141,239,.18);color:var(--accent)}
+.ck-fn{background:rgba(255,255,255,.06);color:var(--sub)}
+.ck-eq{grid-column:span 4;background:var(--green);color:#04201D}
 
 /* complete */
 .complete{text-align:center;padding:40px 0}
@@ -1613,7 +1624,7 @@ function defaultState(){ return {xp:0, streak:1, progress:{}, completed:{}, dril
 function persist(){ localStorage.setItem(SAVE_KEY, JSON.stringify(S)); }
 
 let view={screen:'home', track:null, step:0, answered:false, sel:null, dstage:0, dstageDone:[],
-  dtags:{}, dplug:{}, dformulaSolved:false, dformulaWrong:null};
+  dtags:{}, dplug:{}, dformulaSolved:false, dformulaWrong:null, calc:'', calcOpen:false};
 
 /* ════════════════════════════════════════════════════
    RENDER
@@ -1682,11 +1693,11 @@ function renderHome(){
       <div class="stat"><div class="big">${S.xp}</div><div class="lbl">Total XP</div></div>
     </div>
     <div class="sec-label">Practice</div>
-    <div class="track-card" onclick="openDrill('tvm')" style="border-color:rgba(45,212,191,.3)">
+    <div class="track-card" onclick="openDrill('mixed')" style="border-color:rgba(45,212,191,.3)">
       <div class="track-num" style="background:rgba(45,212,191,.12);color:var(--teal)">🎯</div>
       <div class="track-info">
-        <div class="track-name">Drill Sandbox <span class="pill" style="background:rgba(45,212,191,.15);color:var(--teal)">Endless · all tracks</span></div>
-        <div class="track-desc">Fresh generated problems for every track — TVM, NPV, bonds, stocks, WACC, EVA. Solve, check, repeat — build the reflex.</div>
+        <div class="track-name">Drill Sandbox <span class="pill" style="background:rgba(45,212,191,.15);color:var(--teal)">Endless · mixed + all tracks</span></div>
+        <div class="track-desc">Fresh generated problems — Mixed (all six tracks at random) or focus one topic. Built-in calculator. Solve, check, repeat.</div>
         <div class="track-meta">Solved: ${S.drillSolved||0}</div>
       </div>
       <div class="track-arrow">›</div>
@@ -2239,7 +2250,9 @@ function genInteg(){
     steps:[{f:'capital charge = IC × WACC', c:`${fmtMoney(IC)} × ${(WACC/100).toFixed(2)}`, r:fmtMoney(charge)},{f:'EVA = NOPAT − charge', c:`${fmtMoney(NOPAT)} − ${fmtMoney(charge)}`, r:fmtMoney(ans)}]};
 }
 
+function genMixed(){ return _pick([()=>genDrill('mixed'), genNPV, genBonds, genStock, genWACC, genInteg])(); }
 const DRILLS={
+  mixed:{name:'Mixed', gen:genMixed},
   tvm:{name:'TVM', gen:()=>genDrill('mixed')},
   npv:{name:'NPV / IRR', gen:genNPV},
   bonds:{name:'Bonds', gen:genBonds},
@@ -2248,7 +2261,25 @@ const DRILLS={
   integ:{name:'EVA / DCF', gen:genInteg},
 };
 
-function openDrill(track){ track=track||'tvm'; if(!DRILLS[track]) track='tvm'; view.screen='drill'; view.drill={track, problem:DRILLS[track].gen(), scored:false}; render(); window.scrollTo(0,0); }
+/* ── built-in calculator ── */
+function evalExpr(s){
+  const t=String(s).replace(/×/g,'*').replace(/÷/g,'/').replace(/[−–]/g,'-').replace(/\s/g,''); let i=0;
+  const peek=()=>t[i];
+  function E(){let v=T(); while(peek()==='+'||peek()==='-'){const o=t[i++],r=T(); v=o==='+'?v+r:v-r;} return v;}
+  function T(){let v=U(); while(peek()==='*'||peek()==='/'){const o=t[i++],r=U(); v=o==='*'?v*r:v/r;} return v;}
+  function U(){ if(peek()==='-'){i++; return -U();} if(peek()==='+'){i++; return U();} return F(); }
+  function F(){ let v=P(); if(peek()==='^'){i++; const r=U(); v=Math.pow(v,r);} return v; }
+  function P(){ if(peek()==='('){i++; const v=E(); if(peek()===')')i++; return v;} let n=''; while(i<t.length&&/[0-9.]/.test(t[i]))n+=t[i++]; return parseFloat(n); }
+  return E();
+}
+function toggleCalc(){ view.calcOpen=!view.calcOpen; const p=document.getElementById('calcPanel'),b=document.getElementById('calcBtn'); if(p)p.style.display=view.calcOpen?'block':'none'; if(b)b.textContent=view.calcOpen?'✕ Close calculator':'🖩 Calculator'; }
+function calcKey(k){ if(view.calc==='Error')view.calc=''; view.calc=(view.calc||'')+k; updateCalc(); }
+function calcClear(){ view.calc=''; updateCalc(); }
+function calcBack(){ view.calc=view.calc==='Error'?'':(view.calc||'').slice(0,-1); updateCalc(); }
+function calcEval(){ try{ const r=evalExpr(view.calc||''); view.calc=isFinite(r)?String(Math.round(r*1e6)/1e6):'Error'; }catch(e){ view.calc='Error'; } updateCalc(); }
+function updateCalc(){ const d=document.getElementById('calcDisp'); if(d)d.textContent=view.calc||'0'; }
+
+function openDrill(track){ track=track||'mixed'; if(!DRILLS[track]) track='mixed'; view.screen='drill'; view.drill={track, problem:DRILLS[track].gen(), scored:false}; render(); window.scrollTo(0,0); }
 function setDrillTrack(k){ view.drill.track=k; newDrill(); }
 function newDrill(){ view.drill.problem=DRILLS[view.drill.track].gen(); view.drill.scored=false; renderDrill(); window.scrollTo(0,0); }
 function toggleHint(){ const b=document.getElementById('hintBox'), btn=document.getElementById('hintBtn'); const show=b.style.display==='none'; b.style.display=show?'block':'none'; btn.textContent=show?'Hide formula hint':'Show formula hint'; }
@@ -2286,8 +2317,37 @@ function renderDrill(){
       <div class="scenario" style="margin:6px 0 2px">${dr.problem.prompt}</div>
       <div class="stage-help" style="margin-top:12px">Read it, spot the type, pick the formula, solve. ${isPct?'Answer as a percent (e.g. 6.05).':'Answer to the nearest dollar is fine.'}</div>
       <div class="drill-input-row">${isPct?'':'<span class="drill-dollar">$</span>'}<input id="drillAns" class="drill-input" placeholder="your answer" inputmode="decimal" autocomplete="off" onkeydown="if(event.key==='Enter')checkDrill()">${isPct?'<span class="drill-dollar">%</span>':''}</div>
-      <button class="btn btn-ghost btn-sm" id="hintBtn" onclick="toggleHint()">Show formula hint</button>
+      <div class="drill-tools">
+        <button class="btn btn-ghost btn-sm" id="hintBtn" onclick="toggleHint()">Show formula hint</button>
+        <button class="btn btn-ghost btn-sm" id="calcBtn" onclick="toggleCalc()">${view.calcOpen?'✕ Close calculator':'🖩 Calculator'}</button>
+      </div>
       <div id="hintBox" class="hint-box" style="display:none">${dr.problem.formula}</div>
+      <div id="calcPanel" class="calc" style="display:${view.calcOpen?'block':'none'}">
+        <div class="calc-display" id="calcDisp">${view.calc||'0'}</div>
+        <div class="calc-grid">
+          <button class="calc-key ck-fn" onclick="calcClear()">C</button>
+          <button class="calc-key ck-fn" onclick="calcBack()">⌫</button>
+          <button class="calc-key ck-fn" onclick="calcKey('(')">(</button>
+          <button class="calc-key ck-fn" onclick="calcKey(')')">)</button>
+          <button class="calc-key" onclick="calcKey('7')">7</button>
+          <button class="calc-key" onclick="calcKey('8')">8</button>
+          <button class="calc-key" onclick="calcKey('9')">9</button>
+          <button class="calc-key ck-op" onclick="calcKey('÷')">÷</button>
+          <button class="calc-key" onclick="calcKey('4')">4</button>
+          <button class="calc-key" onclick="calcKey('5')">5</button>
+          <button class="calc-key" onclick="calcKey('6')">6</button>
+          <button class="calc-key ck-op" onclick="calcKey('×')">×</button>
+          <button class="calc-key" onclick="calcKey('1')">1</button>
+          <button class="calc-key" onclick="calcKey('2')">2</button>
+          <button class="calc-key" onclick="calcKey('3')">3</button>
+          <button class="calc-key ck-op" onclick="calcKey('-')">−</button>
+          <button class="calc-key" onclick="calcKey('0')">0</button>
+          <button class="calc-key" onclick="calcKey('.')">.</button>
+          <button class="calc-key ck-op" onclick="calcKey('^')" title="power">xʸ</button>
+          <button class="calc-key ck-op" onclick="calcKey('+')">+</button>
+          <button class="calc-key ck-eq" onclick="calcEval()">=</button>
+        </div>
+      </div>
       <div class="feedback" id="drillFb"></div>
       <div id="drillSolve"></div>
       <div class="nav-row">
