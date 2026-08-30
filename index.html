@@ -288,6 +288,16 @@ body{
 .ck-op{background:rgba(91,141,239,.18);color:var(--accent)}
 .ck-fn{background:rgba(255,255,255,.06);color:var(--sub)}
 .ck-eq{grid-column:span 4;background:var(--green);color:#04201D}
+/* floating calculator */
+.calc.floating{position:fixed;bottom:16px;right:16px;width:300px;max-width:calc(100vw - 24px);max-height:82vh;overflow-y:auto;z-index:200;box-shadow:0 16px 48px rgba(0,0,0,.65)}
+.calc-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;font-size:.72rem;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;color:var(--sub);cursor:move;user-select:none;touch-action:none}
+.calc-x{background:var(--panel2);border:1px solid var(--line);color:var(--text);border-radius:7px;width:30px;height:30px;cursor:pointer;font-weight:800;font-size:.85rem;flex-shrink:0}
+.calc-x:hover{background:#222c42}
+.hint-head{display:flex;align-items:center;justify-content:space-between;background:var(--panel2);border:1px solid var(--line);border-radius:9px;padding:9px 13px;margin-top:10px;cursor:pointer;font-weight:700;font-size:.82rem;color:var(--sub)}
+.hint-head:hover{border-color:rgba(91,141,239,.4)}
+@keyframes hintpulse{0%{box-shadow:0 0 0 0 rgba(91,141,239,.45)}70%{box-shadow:0 0 0 9px rgba(91,141,239,0)}100%{box-shadow:0 0 0 0 rgba(91,141,239,0)}}
+.hint-pulse{animation:hintpulse 1.2s ease-out 2}
+@media(max-width:520px){ .calc.floating{left:10px;right:10px;width:auto;bottom:10px} }
 
 /* complete */
 .complete{text-align:center;padding:40px 0}
@@ -1627,7 +1637,7 @@ function defaultState(){ return {xp:0, streak:1, progress:{}, completed:{}, dril
 function persist(){ localStorage.setItem(SAVE_KEY, JSON.stringify(S)); }
 
 let view={screen:'home', track:null, step:0, answered:false, sel:null, dstage:0, dstageDone:[],
-  dtags:{}, dplug:{}, dformulaSolved:false, dformulaWrong:null, calc:'', calcOpen:false, hintLevel:0};
+  dtags:{}, dplug:{}, dformulaSolved:false, dformulaWrong:null, calc:'', calcOpen:false, hintLevel:0, hintsCollapsed:false};
 
 /* ════════════════════════════════════════════════════
    RENDER
@@ -2282,10 +2292,28 @@ function calcBack(){ view.calc=view.calc==='Error'?'':(view.calc||'').slice(0,-1
 function calcEval(){ try{ const r=evalExpr(view.calc||''); view.calc=isFinite(r)?String(Math.round(r*1e6)/1e6):'Error'; }catch(e){ view.calc='Error'; } updateCalc(); }
 function updateCalc(){ const d=document.getElementById('calcDisp'); if(d)d.value=view.calc||''; }
 function calcSend(){ calcEval(); const el=document.getElementById('drillAns'); if(el && view.calc && view.calc!=='Error'){ el.value=view.calc; el.classList.remove('ok','bad'); const fb=document.getElementById('drillFb'); if(fb){fb.className='feedback'; fb.innerHTML='';} const btn=document.getElementById('drillCheck'); if(btn)btn.disabled=false; el.focus(); } }
+function calcDragStart(e){
+  if(e.target && e.target.classList && e.target.classList.contains('calc-x')) return;
+  const panel=document.getElementById('calcPanel'); if(!panel) return;
+  const r=panel.getBoundingClientRect();
+  const px=e.touches?e.touches[0].clientX:e.clientX, py=e.touches?e.touches[0].clientY:e.clientY;
+  view._cdrag={dx:px-r.left, dy:py-r.top};
+  panel.style.left=r.left+'px'; panel.style.top=r.top+'px'; panel.style.right='auto'; panel.style.bottom='auto';
+  document.addEventListener('pointermove',calcDragMove); document.addEventListener('pointerup',calcDragEnd);
+  e.preventDefault();
+}
+function calcDragMove(e){
+  const panel=document.getElementById('calcPanel'); if(!panel||!view._cdrag) return;
+  let x=e.clientX-view._cdrag.dx, y=e.clientY-view._cdrag.dy;
+  x=Math.max(4,Math.min(innerWidth-panel.offsetWidth-4,x));
+  y=Math.max(4,Math.min(innerHeight-44,y));
+  panel.style.left=x+'px'; panel.style.top=y+'px'; view.calcPos={x,y};
+}
+function calcDragEnd(){ view._cdrag=null; document.removeEventListener('pointermove',calcDragMove); document.removeEventListener('pointerup',calcDragEnd); }
 
-function openDrill(track){ track=track||'mixed'; if(!DRILLS[track]) track='mixed'; view.screen='drill'; view.hintLevel=0; view.drill={track, problem:DRILLS[track].gen(), scored:false}; render(); window.scrollTo(0,0); }
+function openDrill(track){ track=track||'mixed'; if(!DRILLS[track]) track='mixed'; view.screen='drill'; view.hintLevel=0; view.hintsCollapsed=false; view.drill={track, problem:DRILLS[track].gen(), scored:false}; render(); window.scrollTo(0,0); }
 function setDrillTrack(k){ view.drill.track=k; newDrill(); }
-function newDrill(){ view.hintLevel=0; view.drill.problem=DRILLS[view.drill.track].gen(); view.drill.scored=false; renderDrill(); window.scrollTo(0,0); }
+function newDrill(){ view.hintLevel=0; view.hintsCollapsed=false; view.drill.problem=DRILLS[view.drill.track].gen(); view.drill.scored=false; renderDrill(); window.scrollTo(0,0); }
 function toggleHint(){ const b=document.getElementById('hintBox'), btn=document.getElementById('hintBtn'); const show=b.style.display==='none'; b.style.display=show?'block':'none'; btn.textContent=show?'Hide formula hint':'Show formula hint'; }
 function drillStepsHTML(p){
   const steps=p.steps.map((s,i)=>`<div class="sstep" style="animation-delay:${i*0.15}s"><div class="sn">Step ${i+1}</div><div class="sf">${s.f}</div><div class="sc">${s.c} &nbsp;<span class="sr">= ${s.r}</span></div></div>`).join('');
@@ -2339,13 +2367,26 @@ function hintTiers(p){ const h=HINTS[p.type]||{}; return [
   {label:'What it\'s really asking', body:h.eli5},
   {label:'Common pitfall', body:h.pitfall}
 ].filter(t=>t.body); }
-function nextHint(){ view.hintLevel=Math.min(4,(view.hintLevel||0)+1); renderHints(); }
-function renderHints(){
+function nextHint(){ view.hintLevel=Math.min(4,(view.hintLevel||0)+1); renderHints(true); }
+function toggleHintsCollapse(){ view.hintsCollapsed=!view.hintsCollapsed; renderHints(false); }
+function renderHints(pulse){
   const tiers=hintTiers(view.drill.problem), lvl=view.hintLevel||0;
   const stack=document.getElementById('hintStack');
-  if(stack) stack.innerHTML=tiers.slice(0,lvl).map(t=>`<div class="hint-box"><div class="hint-lbl">${t.label}</div>${t.body}</div>`).join('');
+  if(stack){
+    if(lvl===0){ stack.innerHTML=''; }
+    else {
+      const collapsed=view.hintsCollapsed;
+      const head=`<div class="hint-head" onclick="toggleHintsCollapse()"><span>💡 Hints (${lvl})</span><span>${collapsed?'▸ show':'▾ hide'}</span></div>`;
+      const body=collapsed?'':tiers.slice(0,lvl).map(t=>`<div class="hint-box"><div class="hint-lbl">${t.label}</div>${t.body}</div>`).join('');
+      stack.innerHTML=head+body;
+    }
+  }
   const btn=document.getElementById('hintBtn');
-  if(btn){ const labels=['💡 Show a hint','Still stuck? How to think →','Explain it simply →','Common pitfall →']; if(lvl>=tiers.length){btn.style.display='none';} else {btn.style.display=''; btn.textContent=labels[Math.min(lvl,3)];} }
+  if(btn){ const labels=['💡 Show a hint','Still stuck? How to think →','Explain it simply →','Common pitfall →'];
+    if(lvl>=tiers.length){ btn.style.display='none'; }
+    else { btn.style.display=''; btn.textContent=labels[Math.min(lvl,3)];
+      if(pulse){ btn.classList.remove('hint-pulse'); void btn.offsetWidth; btn.classList.add('hint-pulse'); } }
+  }
 }
 function renderDrill(){
   const dr=view.drill, unit=dr.problem.unit||'$', isPct=unit==='%';
@@ -2366,7 +2407,8 @@ function renderDrill(){
         <button class="btn btn-ghost btn-sm" id="calcBtn" onclick="toggleCalc()">${view.calcOpen?'✕ Close calculator':'🖩 Calculator'}</button>
       </div>
       <div id="hintStack"></div>
-      <div id="calcPanel" class="calc" style="display:${view.calcOpen?'block':'none'}">
+      <div id="calcPanel" class="calc floating" style="display:${view.calcOpen?'block':'none'}${view.calcPos?`;left:${view.calcPos.x}px;top:${view.calcPos.y}px;right:auto;bottom:auto`:''}">
+        <div class="calc-head" onpointerdown="calcDragStart(event)" title="drag to move"><span>⠿ Calculator</span><button class="calc-x" onclick="toggleCalc()" title="close">✕</button></div>
         <input class="calc-display" id="calcDisp" value="${(view.calc||'').replace(/"/g,'&quot;')}" placeholder="0" spellcheck="false" autocomplete="off" oninput="view.calc=this.value" onkeydown="if(event.key==='Enter'){event.preventDefault();calcEval();}">
         <div class="calc-grid">
           <button class="calc-key ck-fn" onclick="calcClear()">C</button>
@@ -2402,7 +2444,7 @@ function renderDrill(){
     </div>
     <p class="footer-note">Endless generated problems across all six tracks. +5 XP per solve.</p>
   </div>`;
-  requestAnimationFrame(()=>{ renderHints(); const el=document.getElementById('drillAns'); if(el) el.focus(); });
+  requestAnimationFrame(()=>{ renderHints(true); const el=document.getElementById('drillAns'); if(el) el.focus(); });
 }
 
 /* ════════════════════════════════════════════════════
