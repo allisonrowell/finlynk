@@ -1682,11 +1682,11 @@ function renderHome(){
       <div class="stat"><div class="big">${S.xp}</div><div class="lbl">Total XP</div></div>
     </div>
     <div class="sec-label">Practice</div>
-    <div class="track-card" onclick="openDrill()" style="border-color:rgba(45,212,191,.3)">
+    <div class="track-card" onclick="openDrill('tvm')" style="border-color:rgba(45,212,191,.3)">
       <div class="track-num" style="background:rgba(45,212,191,.12);color:var(--teal)">🎯</div>
       <div class="track-info">
-        <div class="track-name">TVM Drill Sandbox <span class="pill" style="background:rgba(45,212,191,.15);color:var(--teal)">Endless</span></div>
-        <div class="track-desc">Fresh Time-Value-of-Money word problems, generated on the spot. Solve, check, repeat — build the reflex.</div>
+        <div class="track-name">Drill Sandbox <span class="pill" style="background:rgba(45,212,191,.15);color:var(--teal)">Endless · all tracks</span></div>
+        <div class="track-desc">Fresh generated problems for every track — TVM, NPV, bonds, stocks, WACC, EVA. Solve, check, repeat — build the reflex.</div>
         <div class="track-meta">Solved: ${S.drillSolved||0}</div>
       </div>
       <div class="track-arrow">›</div>
@@ -1993,7 +1993,7 @@ function renderComplete(){
       <p style="font-size:.85rem;margin-top:10px">Total XP: ${S.xp}</p>
       <p style="font-size:.85rem;color:var(--dim);max-width:420px;margin:14px auto 0">Run it again anytime before Exercise 1 (Aug 22). The goal: the decision tree becomes automatic.</p>
       <div class="nav-row" style="max-width:340px;margin:24px auto 0;flex-direction:column">
-        ${t.id==='tvm'?`<button class="btn btn-green btn-block" onclick="openDrill()">🎯 Drill this track →</button>`:''}
+        ${DRILLS[t.id]?`<button class="btn btn-green btn-block" onclick="openDrill('${t.id}')">🎯 Drill this track →</button>`:''}
         <button class="btn btn-primary btn-block" onclick="goHome()">Back to Tracks →</button>
       </div>
     </div>
@@ -2041,9 +2041,12 @@ function bumpXP(n){ S.xp+=n; persist();
 /* ════════════════════════════════════════════════════
    TVM DRILL SANDBOX — endless generated problems
 ════════════════════════════════════════════════════ */
-function fmtMoney(x){ return '$'+Number(x).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}); }
+function fmtMoney(x){ const n=Number(x); return (n<0?'−$':'$')+Math.abs(n).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}); }
 function fmtN(x,d){ return Number(x).toLocaleString('en-US',{minimumFractionDigits:d,maximumFractionDigits:d}); }
-function parseNum(s){ return parseFloat(String(s).replace(/[$,\s]/g,'')); }
+function fmtAns(x,unit){ return unit==='%'? fmtN(x,2)+'%' : fmtMoney(x); }
+function parseNum(s){ return parseFloat(String(s).replace(/[$,\s%]/g,'')); }
+const _R=(a,b)=>a+Math.floor(Math.random()*(b-a+1));
+const _pick=a=>a[Math.floor(Math.random()*a.length)];
 
 const DRILL_POOLS={
   mixed:['fvLump','pvLump','pvAnn','fvAnn','pmt','perp','gperp'],
@@ -2108,9 +2111,146 @@ function genDrill(filter){
            {f:'PV = C / (r − g)', c:`${fmtMoney(C)} / ${(rpd-gd).toFixed(2)}`, r:fmtMoney(ans)}]};
 }
 
-function openDrill(){ view.screen='drill'; view.drill={filter:'mixed', problem:genDrill('mixed'), scored:false}; render(); window.scrollTo(0,0); }
-function setDrillFilter(k){ view.drill.filter=k; newDrill(); }
-function newDrill(){ view.drill.problem=genDrill(view.drill.filter); view.drill.scored=false; renderDrill(); window.scrollTo(0,0); }
+/* ── Track 2: NPV / IRR ── */
+function genNPV(){
+  const t=_pick(['npv','ocf','salvage']);
+  if(t==='npv'){
+    const CF0=_R(5,50)*1000, CF1=_R(3,40)*1000, CF2=_R(3,40)*1000, r=_R(6,15), rd=r/100;
+    const pv1=CF1/(1+rd), pv2=CF2/Math.pow(1+rd,2), ans=-CF0+pv1+pv2;
+    return {type:t, unit:'$', label:'NPV · given cash flows', formula:'NPV = −CF₀ + CF₁/(1+r) + CF₂/(1+r)²', ans,
+      prompt:`A project costs <b>${fmtMoney(CF0)}</b> today and returns <b>${fmtMoney(CF1)}</b> in year 1 and <b>${fmtMoney(CF2)}</b> in year 2. At a <b>${r}%</b> required return, what is its NPV?`,
+      steps:[{f:'CF₁/(1+r)', c:`${fmtMoney(CF1)} / ${(1+rd).toFixed(2)}`, r:fmtMoney(pv1)},
+             {f:'CF₂/(1+r)²', c:`${fmtMoney(CF2)} / ${Math.pow(1+rd,2).toFixed(4)}`, r:fmtMoney(pv2)},
+             {f:'NPV = −CF₀ + PV₁ + PV₂', c:`−${fmtMoney(CF0)} + ${fmtMoney(pv1)} + ${fmtMoney(pv2)}`, r:fmtMoney(ans)}]};
+  }
+  if(t==='ocf'){
+    const Rev=_R(4,9)*1000000, Cost=_R(1,3)*1000000, Dep=_R(3,12)*100000, T=_R(20,40), td=T/100;
+    const ebit=Rev-Cost-Dep, at=ebit*(1-td), ans=at+Dep;
+    return {type:t, unit:'$', label:'Operating cash flow', formula:'OCF = (Rev − Cost − Dep)(1 − T) + Dep', ans,
+      prompt:`A project earns <b>${fmtMoney(Rev)}</b> in revenue and <b>${fmtMoney(Cost)}</b> in costs each year, with <b>${fmtMoney(Dep)}</b> depreciation and a <b>${T}%</b> tax rate. What is the annual operating cash flow?`,
+      steps:[{f:'EBIT = Rev − Cost − Dep', c:`${fmtMoney(Rev)} − ${fmtMoney(Cost)} − ${fmtMoney(Dep)}`, r:fmtMoney(ebit)},
+             {f:'after-tax = EBIT(1−T)', c:`${fmtMoney(ebit)} × ${(1-td).toFixed(2)}`, r:fmtMoney(at)},
+             {f:'OCF = after-tax + Dep', c:`${fmtMoney(at)} + ${fmtMoney(Dep)}`, r:fmtMoney(ans)}]};
+  }
+  const Salv=_R(5,30)*100000, BV=_R(5,30)*100000, T=_R(20,40), td=T/100, NWC=_R(1,10)*100000;
+  const gain=Salv-BV, tax=td*gain, ats=Salv-tax, ans=ats+NWC;
+  return {type:t, unit:'$', label:'Terminal cash flow', formula:'Terminal = [Salv − T(Salv − BV)] + NWC', ans,
+    prompt:`At the end of a project you sell equipment for <b>${fmtMoney(Salv)}</b> (book value <b>${fmtMoney(BV)}</b>), tax rate <b>${T}%</b>, and recover <b>${fmtMoney(NWC)}</b> of working capital. What is the total terminal-year cash flow?`,
+    steps:[{f:'gain = Salv − BV', c:`${fmtMoney(Salv)} − ${fmtMoney(BV)}`, r:fmtMoney(gain)},
+           {f:'tax = T × gain', c:`${td.toFixed(2)} × ${fmtMoney(gain)}`, r:fmtMoney(tax)},
+           {f:'after-tax salvage = Salv − tax', c:`${fmtMoney(Salv)} − (${fmtMoney(tax)})`, r:fmtMoney(ats)},
+           {f:'Terminal = salvage + NWC', c:`${fmtMoney(ats)} + ${fmtMoney(NWC)}`, r:fmtMoney(ans)}]};
+}
+/* ── Track 3: Bonds ── */
+function genBonds(){
+  const t=_pick(['coupon','zero','price']);
+  if(t==='coupon'){
+    const rate=_R(3,9), Face=_pick([1000,1000,5000]), semi=_pick([true,false]);
+    const annual=rate/100*Face, ans=semi?annual/2:annual;
+    return {type:t, unit:'$', label:'Coupon payment', formula:semi?'C = (rate × Face) / 2':'C = rate × Face', ans,
+      prompt:`A bond has a <b>${rate}%</b> coupon rate on a <b>${fmtMoney(Face)}</b> face value, paid <b>${semi?'semi-annually':'annually'}</b>. What is each coupon payment?`,
+      steps:semi?[{f:'annual = rate × Face', c:`${(rate/100).toFixed(2)} × ${fmtMoney(Face)}`, r:fmtMoney(annual)},{f:'semi-annual = annual / 2', c:`${fmtMoney(annual)} / 2`, r:fmtMoney(ans)}]
+                :[{f:'C = rate × Face', c:`${(rate/100).toFixed(2)} × ${fmtMoney(Face)}`, r:fmtMoney(ans)}]};
+  }
+  if(t==='zero'){
+    const Face=_pick([1000,1000,5000]), r=_R(3,8), yr=_R(5,20), rd=r/100, fac=Math.pow(1+rd,yr), ans=Face/fac;
+    return {type:t, unit:'$', label:'Zero-coupon bond', formula:'Price = F / (1 + r)ᵗ', ans,
+      prompt:`A zero-coupon bond pays <b>${fmtMoney(Face)}</b> at maturity in <b>${yr} years</b>. At a <b>${r}%</b> yield, what is its price today?`,
+      steps:[{f:'(1 + r)ᵗ', c:`(1 + ${rd.toFixed(2)})^${yr}`, r:fmtN(fac,4)},{f:'Price = F / (1+r)ᵗ', c:`${fmtMoney(Face)} / ${fmtN(fac,4)}`, r:fmtMoney(ans)}]};
+  }
+  const yrs=_R(5,20), rate=_R(3,8), ytm=_R(3,8), Face=1000;
+  const n=yrs*2, rp=ytm/2/100, C=rate/100*Face/2, af=(1-Math.pow(1+rp,-n))/rp, cpv=C*af, fpv=Face/Math.pow(1+rp,n), ans=cpv+fpv;
+  return {type:t, unit:'$', label:'Bond price (semi-annual)', formula:'Price = C×[1 − 1/(1+r)ᵗ]/r + F/(1+r)ᵗ', ans,
+    prompt:`A <b>${yrs}-year</b> bond has a <b>${rate}%</b> coupon (semi-annual) on a <b>${fmtMoney(Face)}</b> face value, yielding <b>${ytm}%</b>. What is its price?`,
+    steps:[{f:'convert: C=rate×F/2, r=ytm/2, t=yrs×2', c:`r = ${rp.toFixed(4)}, t = ${n}`, r:`C = ${fmtMoney(C)}`},
+           {f:'coupons PV = C × [1−1/(1+r)ᵗ]/r', c:`${fmtMoney(C)} × ${fmtN(af,4)}`, r:fmtMoney(cpv)},
+           {f:'face PV = F/(1+r)ᵗ', c:`${fmtMoney(Face)} / ${fmtN(Math.pow(1+rp,n),4)}`, r:fmtMoney(fpv)},
+           {f:'Price = coupons PV + face PV', c:`${fmtMoney(cpv)} + ${fmtMoney(fpv)}`, r:fmtMoney(ans)}]};
+}
+/* ── Track 4: Stocks (DDM) ── */
+function genStock(){
+  const t=_pick(['d1','gordon','gordon0']);
+  if(t==='d1'){
+    const D0=_R(100,600)/100, g=_R(2,8), ans=D0*(1+g/100);
+    return {type:t, unit:'$', label:"Next year's dividend", formula:'D₁ = D₀ × (1 + g)', ans,
+      prompt:`A company just paid a <b>${fmtMoney(D0)}</b> dividend, growing <b>${g}%</b> per year. What is next year's dividend (D₁)?`,
+      steps:[{f:'D₁ = D₀ × (1+g)', c:`${fmtMoney(D0)} × ${(1+g/100).toFixed(2)}`, r:fmtMoney(ans)}]};
+  }
+  if(t==='gordon'){
+    const D1=_R(150,600)/100, g=_R(2,6), r=g+_R(3,8), ans=D1/((r-g)/100);
+    return {type:t, unit:'$', label:'Gordon Growth value', formula:'P₀ = D₁ / (r − g)', ans,
+      prompt:`A stock pays a <b>${fmtMoney(D1)}</b> dividend next year, growing <b>${g}%</b> forever. At a <b>${r}%</b> required return, what is it worth today?`,
+      steps:[{f:'r − g', c:`${(r/100).toFixed(2)} − ${(g/100).toFixed(2)}`, r:((r-g)/100).toFixed(2)},{f:'P₀ = D₁ / (r−g)', c:`${fmtMoney(D1)} / ${((r-g)/100).toFixed(2)}`, r:fmtMoney(ans)}]};
+  }
+  const D0=_R(150,500)/100, g=_R(2,5), r=g+_R(3,8), D1=D0*(1+g/100), ans=D1/((r-g)/100);
+  return {type:t, unit:'$', label:'Gordon from D₀', formula:'P₀ = D₀(1+g) / (r − g)', ans,
+    prompt:`A stock just paid a <b>${fmtMoney(D0)}</b> dividend, expected to grow <b>${g}%</b> forever. At a <b>${r}%</b> required return, what is it worth today?`,
+    steps:[{f:'D₁ = D₀(1+g)', c:`${fmtMoney(D0)} × ${(1+g/100).toFixed(2)}`, r:fmtMoney(D1)},{f:'P₀ = D₁ / (r−g)', c:`${fmtMoney(D1)} / ${((r-g)/100).toFixed(2)}`, r:fmtMoney(ans)}]};
+}
+/* ── Track 5: WACC (percent answers) ── */
+function genWACC(){
+  const t=_pick(['capm','atdebt','weight','wacc']);
+  if(t==='capm'){
+    const Rf=_R(2,4), beta=_R(50,150)/100, MRP=_R(4,7), ans=Rf+beta*MRP;
+    return {type:t, unit:'%', label:'Cost of equity (CAPM)', formula:'Rₑ = Rf + β × MRP', ans,
+      prompt:`A stock has a beta of <b>${beta.toFixed(2)}</b>. The risk-free rate is <b>${Rf}%</b> and the market risk premium is <b>${MRP}%</b>. What is its cost of equity?`,
+      steps:[{f:'β × MRP', c:`${beta.toFixed(2)} × ${MRP}`, r:fmtN(beta*MRP,2)},{f:'Rₑ = Rf + β×MRP', c:`${Rf} + ${fmtN(beta*MRP,2)}`, r:fmtN(ans,2)+'%'}]};
+  }
+  if(t==='atdebt'){
+    const Rd=_R(3,8), T=_R(20,40), ans=Rd*(1-T/100);
+    return {type:t, unit:'%', label:'After-tax cost of debt', formula:'R_d × (1 − T)', ans,
+      prompt:`A firm's pre-tax cost of debt is <b>${Rd}%</b> and its tax rate is <b>${T}%</b>. What is its after-tax cost of debt?`,
+      steps:[{f:'1 − T', c:`1 − ${(T/100).toFixed(2)}`, r:(1-T/100).toFixed(2)},{f:'R_d × (1−T)', c:`${Rd} × ${(1-T/100).toFixed(2)}`, r:fmtN(ans,2)+'%'}]};
+  }
+  if(t==='weight'){
+    const E=_R(50,95)*10, D=_R(5,50)*10, V=E+D, ans=E/V*100;
+    return {type:t, unit:'%', label:'Equity weight (E/V)', formula:'E/V = E / (E + D)', ans,
+      prompt:`A firm has <b>$${E}M</b> of equity and <b>$${D}M</b> of debt (market value). What percent of the firm is equity (E/V)?`,
+      steps:[{f:'V = E + D', c:`${E} + ${D}`, r:`$${V}M`},{f:'E/V = E / V', c:`${E} / ${V}`, r:fmtN(ans,2)+'%'}]};
+  }
+  const wE=_R(60,90)/100, wD=1-wE, Re=_R(6,12), Rd=_R(3,7), T=_R(20,40), ans=wE*Re+wD*Rd*(1-T/100);
+  return {type:t, unit:'%', label:'WACC', formula:'WACC = (E/V)Rₑ + (D/V)R_d(1−T)', ans,
+    prompt:`A firm is <b>${(wE*100).toFixed(0)}%</b> equity and <b>${(wD*100).toFixed(0)}%</b> debt. Cost of equity <b>${Re}%</b>, pre-tax cost of debt <b>${Rd}%</b>, tax rate <b>${T}%</b>. What is its WACC?`,
+    steps:[{f:'equity part = (E/V)Rₑ', c:`${wE.toFixed(2)} × ${Re}`, r:fmtN(wE*Re,3)},
+           {f:'debt part = (D/V)R_d(1−T)', c:`${wD.toFixed(2)} × ${Rd} × ${(1-T/100).toFixed(2)}`, r:fmtN(wD*Rd*(1-T/100),3)},
+           {f:'WACC = equity + debt', c:`${fmtN(wE*Re,3)} + ${fmtN(wD*Rd*(1-T/100),3)}`, r:fmtN(ans,2)+'%'}]};
+}
+/* ── Track 6: Integrative (EVA / FCF) ── */
+function genInteg(){
+  const t=_pick(['nopat','fcf','eva']);
+  if(t==='nopat'){
+    const EBIT=_R(2,9)*100000000, T=_R(20,40), ans=EBIT*(1-T/100);
+    return {type:t, unit:'$', label:'NOPAT', formula:'NOPAT = EBIT × (1 − T)', ans,
+      prompt:`A company reported EBIT of <b>${fmtMoney(EBIT)}</b> with a <b>${T}%</b> tax rate. What is its NOPAT?`,
+      steps:[{f:'1 − T', c:`1 − ${(T/100).toFixed(2)}`, r:(1-T/100).toFixed(2)},{f:'NOPAT = EBIT(1−T)', c:`${fmtMoney(EBIT)} × ${(1-T/100).toFixed(2)}`, r:fmtMoney(ans)}]};
+  }
+  if(t==='fcf'){
+    const NOPAT=_R(3,9)*100000000, Dep=_R(5,20)*10000000, CapEx=_R(3,15)*10000000, dNWC=_pick([-1,1])*_R(1,8)*10000000;
+    const ans=NOPAT+Dep-CapEx-dNWC;
+    return {type:t, unit:'$', label:'Free cash flow', formula:'FCF = NOPAT + Dep − CapEx − ΔNWC', ans,
+      prompt:`A firm has NOPAT of <b>${fmtMoney(NOPAT)}</b>, depreciation <b>${fmtMoney(Dep)}</b>, capital spending <b>${fmtMoney(CapEx)}</b>, and a change in net working capital of <b>${fmtMoney(dNWC)}</b>. What is its free cash flow?`,
+      steps:[{f:'NOPAT + Dep', c:`${fmtMoney(NOPAT)} + ${fmtMoney(Dep)}`, r:fmtMoney(NOPAT+Dep)},
+             {f:'− CapEx', c:`${fmtMoney(NOPAT+Dep)} − ${fmtMoney(CapEx)}`, r:fmtMoney(NOPAT+Dep-CapEx)},
+             {f:'− ΔNWC', c:`${fmtMoney(NOPAT+Dep-CapEx)} − (${fmtMoney(dNWC)})`, r:fmtMoney(ans)}]};
+  }
+  const NOPAT=_R(3,9)*100000000, IC=_R(30,90)*100000000, WACC=_R(6,12), charge=IC*WACC/100, ans=NOPAT-charge;
+  return {type:t, unit:'$', label:'EVA', formula:'EVA = NOPAT − (IC × WACC)', ans,
+    prompt:`A company has NOPAT of <b>${fmtMoney(NOPAT)}</b>, invested capital of <b>${fmtMoney(IC)}</b>, and a WACC of <b>${WACC}%</b>. What is its EVA?`,
+    steps:[{f:'capital charge = IC × WACC', c:`${fmtMoney(IC)} × ${(WACC/100).toFixed(2)}`, r:fmtMoney(charge)},{f:'EVA = NOPAT − charge', c:`${fmtMoney(NOPAT)} − ${fmtMoney(charge)}`, r:fmtMoney(ans)}]};
+}
+
+const DRILLS={
+  tvm:{name:'TVM', gen:()=>genDrill('mixed')},
+  npv:{name:'NPV / IRR', gen:genNPV},
+  bonds:{name:'Bonds', gen:genBonds},
+  stock:{name:'Stocks', gen:genStock},
+  wacc:{name:'WACC', gen:genWACC},
+  integ:{name:'EVA / DCF', gen:genInteg},
+};
+
+function openDrill(track){ track=track||'tvm'; if(!DRILLS[track]) track='tvm'; view.screen='drill'; view.drill={track, problem:DRILLS[track].gen(), scored:false}; render(); window.scrollTo(0,0); }
+function setDrillTrack(k){ view.drill.track=k; newDrill(); }
+function newDrill(){ view.drill.problem=DRILLS[view.drill.track].gen(); view.drill.scored=false; renderDrill(); window.scrollTo(0,0); }
 function toggleHint(){ const b=document.getElementById('hintBox'), btn=document.getElementById('hintBtn'); const show=b.style.display==='none'; b.style.display=show?'block':'none'; btn.textContent=show?'Hide formula hint':'Show formula hint'; }
 function drillStepsHTML(p){
   const steps=p.steps.map((s,i)=>`<div class="sstep" style="animation-delay:${i*0.15}s"><div class="sn">Step ${i+1}</div><div class="sf">${s.f}</div><div class="sc">${s.c} &nbsp;<span class="sr">= ${s.r}</span></div></div>`).join('');
@@ -2120,10 +2260,12 @@ function checkDrill(){
   const dr=view.drill, el=document.getElementById('drillAns'), fb=document.getElementById('drillFb');
   const val=parseNum(el.value);
   if(!isFinite(val)){ fb.className='feedback show no'; fb.innerHTML='Enter a number first.'; return; }
-  const ans=dr.problem.ans, ok=Math.abs(val-ans)<=Math.max(1,Math.abs(ans)*0.01);
+  const ans=dr.problem.ans, unit=dr.problem.unit||'$';
+  const tol=Math.max(unit==='%'?0.02:0.01, Math.abs(ans)*0.01);
+  const ok=Math.abs(val-ans)<=tol;
   fb.className='feedback show '+(ok?'ok':'no');
-  fb.innerHTML=ok?`✓ Correct! The answer is <b>${fmtMoney(ans)}</b>.`
-                 :`✗ Not quite — you entered ${fmtMoney(val)}. The answer is <b>${fmtMoney(ans)}</b>. Walk the steps below.`;
+  fb.innerHTML=ok?`✓ Correct! The answer is <b>${fmtAns(ans,unit)}</b>.`
+                 :`✗ Not quite — you entered ${fmtAns(val,unit)}. The answer is <b>${fmtAns(ans,unit)}</b>. Walk the steps below.`;
   el.classList.remove('ok','bad'); el.classList.add(ok?'ok':'bad');
   document.getElementById('drillSolve').innerHTML=drillStepsHTML(dr.problem);
   document.getElementById('drillCheck').disabled=true;
@@ -2131,20 +2273,19 @@ function checkDrill(){
     const c=document.getElementById('drillCount'); if(c) c.textContent=S.drillSolved; }
 }
 function renderDrill(){
-  const dr=view.drill;
-  const filters=[['mixed','Mixed'],['lump','Lump sum'],['annuity','Annuity'],['perp','Perpetuity']];
+  const dr=view.drill, unit=dr.problem.unit||'$', isPct=unit==='%';
+  const chips=Object.entries(DRILLS).map(([k,v])=>`<button class="dchip ${dr.track===k?'active':''}" onclick="setDrillTrack('${k}')">${v.name}</button>`).join('');
   app().innerHTML=topbar()+`<div class="wrap fade">
     <div class="lesson-top">
       <button class="btn btn-ghost btn-sm" onclick="goHome()">← Tracks</button>
-      <div class="crumbs">🎯 <b>TVM Drill</b> · Solved <span class="drill-count" id="drillCount">${S.drillSolved||0}</span></div>
+      <div class="crumbs">🎯 <b>${DRILLS[dr.track].name} Drill</b> · Solved <span class="drill-count" id="drillCount">${S.drillSolved||0}</span></div>
     </div>
-    <div class="drill-filters">${filters.map(([k,l])=>`<button class="dchip ${dr.filter===k?'active':''}" onclick="setDrillFilter('${k}')">${l}</button>`).join('')}</div>
+    <div class="drill-filters">${chips}</div>
     <div class="card">
       <div class="ref-tag" style="color:var(--teal);background:rgba(45,212,191,.12)">${dr.problem.label}</div>
       <div class="scenario" style="margin:6px 0 2px">${dr.problem.prompt}</div>
-      <div class="stage-help" style="margin-top:12px">Read it, spot the type, pick the formula, solve. Answer to the nearest dollar is fine.</div>
-      <div class="drill-input-row"><span class="drill-dollar">$</span>
-        <input id="drillAns" class="drill-input" placeholder="your answer" inputmode="decimal" autocomplete="off" onkeydown="if(event.key==='Enter')checkDrill()"></div>
+      <div class="stage-help" style="margin-top:12px">Read it, spot the type, pick the formula, solve. ${isPct?'Answer as a percent (e.g. 6.05).':'Answer to the nearest dollar is fine.'}</div>
+      <div class="drill-input-row">${isPct?'':'<span class="drill-dollar">$</span>'}<input id="drillAns" class="drill-input" placeholder="your answer" inputmode="decimal" autocomplete="off" onkeydown="if(event.key==='Enter')checkDrill()">${isPct?'<span class="drill-dollar">%</span>':''}</div>
       <button class="btn btn-ghost btn-sm" id="hintBtn" onclick="toggleHint()">Show formula hint</button>
       <div id="hintBox" class="hint-box" style="display:none">${dr.problem.formula}</div>
       <div class="feedback" id="drillFb"></div>
@@ -2154,7 +2295,7 @@ function renderDrill(){
         <button class="btn btn-primary" style="flex:1" onclick="newDrill()">New problem →</button>
       </div>
     </div>
-    <p class="footer-note">Endless Time-Value-of-Money problems, generated fresh each time. +5 XP per solve.</p>
+    <p class="footer-note">Endless generated problems across all six tracks. +5 XP per solve.</p>
   </div>`;
   requestAnimationFrame(()=>{ const el=document.getElementById('drillAns'); if(el) el.focus(); });
 }
