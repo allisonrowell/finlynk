@@ -277,7 +277,10 @@ body{
 .drill-tools{display:flex;gap:8px;flex-wrap:wrap}
 /* built-in calculator */
 .calc{margin-top:12px;background:#0F1522;border:1px solid var(--line);border-radius:12px;padding:12px}
-.calc-display{background:#0A0E17;border:1px solid var(--line);border-radius:8px;padding:12px 14px;text-align:right;font-family:ui-monospace,Menlo,monospace;font-size:1.2rem;font-weight:700;color:#fff;margin-bottom:10px;min-height:46px;overflow-x:auto;white-space:nowrap}
+.calc-display{width:100%;box-sizing:border-box;background:#0A0E17;border:1px solid var(--line);border-radius:8px;padding:12px 14px;text-align:right;font-family:ui-monospace,Menlo,monospace;font-size:1.2rem;font-weight:700;color:#fff;margin-bottom:10px;min-height:46px;overflow-x:auto;white-space:nowrap}
+.calc-display:focus{outline:none;border-color:var(--accent)}
+.hint-box{position:relative}
+.hint-box .hint-lbl{font-size:.62rem;font-weight:800;letter-spacing:1.2px;text-transform:uppercase;color:var(--accent);margin-bottom:5px}
 .calc-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:7px}
 .calc-key{font-family:'Inter';font-weight:700;font-size:1.02rem;padding:14px 0;border-radius:9px;border:none;cursor:pointer;background:var(--panel2);color:var(--text);transition:filter .1s,transform .05s}
 .calc-key:hover{filter:brightness(1.3)}
@@ -1624,7 +1627,7 @@ function defaultState(){ return {xp:0, streak:1, progress:{}, completed:{}, dril
 function persist(){ localStorage.setItem(SAVE_KEY, JSON.stringify(S)); }
 
 let view={screen:'home', track:null, step:0, answered:false, sel:null, dstage:0, dstageDone:[],
-  dtags:{}, dplug:{}, dformulaSolved:false, dformulaWrong:null, calc:'', calcOpen:false};
+  dtags:{}, dplug:{}, dformulaSolved:false, dformulaWrong:null, calc:'', calcOpen:false, hintLevel:0};
 
 /* ════════════════════════════════════════════════════
    RENDER
@@ -2277,11 +2280,12 @@ function calcKey(k){ if(view.calc==='Error')view.calc=''; view.calc=(view.calc||
 function calcClear(){ view.calc=''; updateCalc(); }
 function calcBack(){ view.calc=view.calc==='Error'?'':(view.calc||'').slice(0,-1); updateCalc(); }
 function calcEval(){ try{ const r=evalExpr(view.calc||''); view.calc=isFinite(r)?String(Math.round(r*1e6)/1e6):'Error'; }catch(e){ view.calc='Error'; } updateCalc(); }
-function updateCalc(){ const d=document.getElementById('calcDisp'); if(d)d.textContent=view.calc||'0'; }
+function updateCalc(){ const d=document.getElementById('calcDisp'); if(d)d.value=view.calc||''; }
+function calcSend(){ calcEval(); const el=document.getElementById('drillAns'); if(el && view.calc && view.calc!=='Error'){ el.value=view.calc; el.classList.remove('ok','bad'); const fb=document.getElementById('drillFb'); if(fb){fb.className='feedback'; fb.innerHTML='';} const btn=document.getElementById('drillCheck'); if(btn)btn.disabled=false; el.focus(); } }
 
-function openDrill(track){ track=track||'mixed'; if(!DRILLS[track]) track='mixed'; view.screen='drill'; view.drill={track, problem:DRILLS[track].gen(), scored:false}; render(); window.scrollTo(0,0); }
+function openDrill(track){ track=track||'mixed'; if(!DRILLS[track]) track='mixed'; view.screen='drill'; view.hintLevel=0; view.drill={track, problem:DRILLS[track].gen(), scored:false}; render(); window.scrollTo(0,0); }
 function setDrillTrack(k){ view.drill.track=k; newDrill(); }
-function newDrill(){ view.drill.problem=DRILLS[view.drill.track].gen(); view.drill.scored=false; renderDrill(); window.scrollTo(0,0); }
+function newDrill(){ view.hintLevel=0; view.drill.problem=DRILLS[view.drill.track].gen(); view.drill.scored=false; renderDrill(); window.scrollTo(0,0); }
 function toggleHint(){ const b=document.getElementById('hintBox'), btn=document.getElementById('hintBtn'); const show=b.style.display==='none'; b.style.display=show?'block':'none'; btn.textContent=show?'Hide formula hint':'Show formula hint'; }
 function drillStepsHTML(p){
   const steps=p.steps.map((s,i)=>`<div class="sstep" style="animation-delay:${i*0.15}s"><div class="sn">Step ${i+1}</div><div class="sf">${s.f}</div><div class="sc">${s.c} &nbsp;<span class="sr">= ${s.r}</span></div></div>`).join('');
@@ -2303,6 +2307,46 @@ function checkDrill(){
   if(ok && !dr.scored){ dr.scored=true; S.drillSolved=(S.drillSolved||0)+1; persist(); bumpXP(5);
     const c=document.getElementById('drillCount'); if(c) c.textContent=S.drillSolved; }
 }
+/* ── progressive hints (per problem type) ── */
+const HINTS={
+  fvLump:{think:'You have money now and want it later — that is growth. Multiply by (1+r) once for each year.', eli5:'Money in the bank grows a little every year. How big is the pile at the end?', pitfall:'Go FORWARD in time → multiply. Don\'t divide (that would be discounting).'},
+  pvLump:{think:'You have a future amount and want today\'s value — pull it back by dividing by (1+r) each year.', eli5:'A promise of money later is worth less than cash today. How much less, right now?', pitfall:'Future → today means DIVIDE, not multiply.'},
+  pvAnn:{think:'Same payment every year for a set number of years = an annuity. Use the annuity present-value factor.', eli5:'You get the same check every year for a while. What is that whole stream worth today?', pitfall:'It\'s not one lump sum and not forever — use t, and divide the factor by r.'},
+  fvAnn:{think:'You add the same amount each year and let it grow — annuity future value.', eli5:'You save the same amount every year. How big is the pile at the very end?', pitfall:'This lands at the END, not today — don\'t use the present-value factor.'},
+  pmt:{think:'You know the loan today (PV) and need the level payment — solve the annuity formula for C.', eli5:'You borrowed money. What equal payment each year pays it all off?', pitfall:'Solving for the payment means DIVIDE PV by the annuity factor.'},
+  perp:{think:'A payment that never ends = perpetuity. Value is just payment ÷ rate.', eli5:'It pays the same amount forever. How much money do you need to make that happen?', pitfall:'No t appears — "forever" means you never plug in a number of years.'},
+  gperp:{think:'Forever AND growing = growing perpetuity. Divide the payment by (r − g).', eli5:'It pays a bit more every year, forever. How much do you need to fund it?', pitfall:'Subtract g in the denominator (r − g); it only works when g < r.'},
+  npv:{think:'Discount each future cash flow to today, then subtract what you paid up front.', eli5:'Is the project worth more than it costs? Add up today\'s value of what it pays, minus the cost.', pitfall:'The upfront cost is NEGATIVE — subtract it, and discount each year separately.'},
+  ocf:{think:'Tax the operating profit (Rev−Cost−Dep), then add depreciation back because it isn\'t cash.', eli5:'How much real cash does the business make in a year, after tax?', pitfall:'Depreciation is subtracted to figure the tax, then ADDED BACK — miss the add-back and you\'re too low.'},
+  salvage:{think:'Tax only the gain over book value, then add the working capital you get back.', eli5:'You sell the equipment and get your deposit back at the end. How much cash all together?', pitfall:'Tax the GAIN (Salv−BV), not the whole sale; selling below book value gives a tax refund (adds cash).'},
+  coupon:{think:'Coupon dollars = rate × face. If it pays twice a year, split it in half.', eli5:'How many dollars does the bond hand you each time it pays?', pitfall:'Semi-annual means ÷2 — don\'t give the whole year\'s coupon as one payment.'},
+  zero:{think:'No coupons means the only cash flow is the face value at the end — discount it once.', eli5:'You get one payment far in the future. What is it worth now?', pitfall:'Don\'t reach for the big coupon-bond formula — a zero is a simple lump-sum present value.'},
+  price:{think:'A bond = coupons (an annuity) + face value (a lump sum). Price both and add.', eli5:'Add up what all the little coupon checks are worth today, plus the big payback at the end.', pitfall:'Semi-annual: halve the coupon AND the yield, and double the periods, before you plug in.'},
+  d1:{think:'Grow this year\'s dividend by one year: D₀ × (1+g).', eli5:'The dividend gets a little bigger next year. How big?', pitfall:'Use D₀ × (1+g), not D₀ × g (that\'s only the increase).'},
+  gordon:{think:'A dividend growing forever = growing perpetuity. Divide next year\'s dividend by (r − g).', eli5:'A stock pays a growing dividend forever. What is a fair price today?', pitfall:'Put NEXT year\'s dividend on top, and SUBTRACT g in the denominator.'},
+  gordon0:{think:'First grow the paid dividend to next year (D₀(1+g)), then divide by (r − g).', eli5:'They just paid a dividend that will grow forever. What is the stock worth?', pitfall:'Grow D₀ to D₁ FIRST — the formula uses next year\'s dividend, not the one just paid.'},
+  capm:{think:'Start at the risk-free rate and add pay for risk: beta × the market risk premium.', eli5:'How much return do investors demand for holding this riskier stock?', pitfall:'Beta multiplies the risk premium (β×MRP); then you ADD the risk-free rate.'},
+  atdebt:{think:'Interest is tax-deductible, so the real cost is the rate × (1 − tax).', eli5:'Debt costs less than the sticker rate because taxes give some back. How much really?', pitfall:'Multiply by (1 − T), not by T.'},
+  weight:{think:'A weight is one piece over the whole: equity ÷ (equity + debt).', eli5:'Out of all the money funding the firm, what slice is equity?', pitfall:'Divide by the TOTAL (E+D), not by debt — a weight sits between 0 and 100%.'},
+  wacc:{think:'Blend the two costs by their weights, and give debt the tax break.', eli5:'What is the firm\'s overall cost of money, mixing stock and loans?', pitfall:'Only debt gets (1−T); weight each cost — don\'t just add the two rates.'},
+  nopat:{think:'Operating profit after tax: EBIT × (1 − tax).', eli5:'How much profit does the business make after taxes, before financing?', pitfall:'Multiply by (1−T), not by T.'},
+  fcf:{think:'Start from NOPAT, add non-cash depreciation, then subtract what you reinvest (capex and NWC).', eli5:'After paying to keep the business running and growing, how much cash is truly free?', pitfall:'Add depreciation (+), subtract capex and ΔNWC (−); watch the ΔNWC sign — a drop in NWC ADDS cash.'},
+  eva:{think:'Subtract a charge for the capital used (capital × WACC) from after-tax profit.', eli5:'Did the company earn more than investors demanded on the money tied up? By how much?', pitfall:'The charge is capital × WACC (a smallish number), not the entire capital balance.'},
+};
+function hintTiers(p){ const h=HINTS[p.type]||{}; return [
+  {label:'Formula', body:p.formula},
+  {label:'How to think about it', body:h.think},
+  {label:'What it\'s really asking', body:h.eli5},
+  {label:'Common pitfall', body:h.pitfall}
+].filter(t=>t.body); }
+function nextHint(){ view.hintLevel=Math.min(4,(view.hintLevel||0)+1); renderHints(); }
+function renderHints(){
+  const tiers=hintTiers(view.drill.problem), lvl=view.hintLevel||0;
+  const stack=document.getElementById('hintStack');
+  if(stack) stack.innerHTML=tiers.slice(0,lvl).map(t=>`<div class="hint-box"><div class="hint-lbl">${t.label}</div>${t.body}</div>`).join('');
+  const btn=document.getElementById('hintBtn');
+  if(btn){ const labels=['💡 Show a hint','Still stuck? How to think →','Explain it simply →','Common pitfall →']; if(lvl>=tiers.length){btn.style.display='none';} else {btn.style.display=''; btn.textContent=labels[Math.min(lvl,3)];} }
+}
 function renderDrill(){
   const dr=view.drill, unit=dr.problem.unit||'$', isPct=unit==='%';
   const chips=Object.entries(DRILLS).map(([k,v])=>`<button class="dchip ${dr.track===k?'active':''}" onclick="setDrillTrack('${k}')">${v.name}</button>`).join('');
@@ -2318,12 +2362,12 @@ function renderDrill(){
       <div class="stage-help" style="margin-top:12px">Read it, spot the type, pick the formula, solve. ${isPct?'Answer as a percent (e.g. 6.05).':'Answer to the nearest dollar is fine.'}</div>
       <div class="drill-input-row">${isPct?'':'<span class="drill-dollar">$</span>'}<input id="drillAns" class="drill-input" placeholder="your answer" inputmode="decimal" autocomplete="off" onkeydown="if(event.key==='Enter')checkDrill()">${isPct?'<span class="drill-dollar">%</span>':''}</div>
       <div class="drill-tools">
-        <button class="btn btn-ghost btn-sm" id="hintBtn" onclick="toggleHint()">Show formula hint</button>
+        <button class="btn btn-ghost btn-sm" id="hintBtn" onclick="nextHint()">💡 Show a hint</button>
         <button class="btn btn-ghost btn-sm" id="calcBtn" onclick="toggleCalc()">${view.calcOpen?'✕ Close calculator':'🖩 Calculator'}</button>
       </div>
-      <div id="hintBox" class="hint-box" style="display:none">${dr.problem.formula}</div>
+      <div id="hintStack"></div>
       <div id="calcPanel" class="calc" style="display:${view.calcOpen?'block':'none'}">
-        <div class="calc-display" id="calcDisp">${view.calc||'0'}</div>
+        <input class="calc-display" id="calcDisp" value="${(view.calc||'').replace(/"/g,'&quot;')}" placeholder="0" spellcheck="false" autocomplete="off" oninput="view.calc=this.value" onkeydown="if(event.key==='Enter'){event.preventDefault();calcEval();}">
         <div class="calc-grid">
           <button class="calc-key ck-fn" onclick="calcClear()">C</button>
           <button class="calc-key ck-fn" onclick="calcBack()">⌫</button>
@@ -2347,6 +2391,7 @@ function renderDrill(){
           <button class="calc-key ck-op" onclick="calcKey('+')">+</button>
           <button class="calc-key ck-eq" onclick="calcEval()">=</button>
         </div>
+        <button class="btn btn-primary btn-block" style="margin-top:9px" onclick="calcSend()">⤵ Use as answer</button>
       </div>
       <div class="feedback" id="drillFb"></div>
       <div id="drillSolve"></div>
@@ -2357,7 +2402,7 @@ function renderDrill(){
     </div>
     <p class="footer-note">Endless generated problems across all six tracks. +5 XP per solve.</p>
   </div>`;
-  requestAnimationFrame(()=>{ const el=document.getElementById('drillAns'); if(el) el.focus(); });
+  requestAnimationFrame(()=>{ renderHints(); const el=document.getElementById('drillAns'); if(el) el.focus(); });
 }
 
 /* ════════════════════════════════════════════════════
