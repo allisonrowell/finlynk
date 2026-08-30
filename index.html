@@ -261,6 +261,20 @@ body{
 .feedback.ok{background:rgba(38,166,154,.1);border:1px solid rgba(38,166,154,.3);color:var(--greenL)}
 .feedback.no{background:rgba(239,83,80,.1);border:1px solid rgba(239,83,80,.3);color:var(--redL)}
 
+/* ── Drill sandbox ── */
+.drill-filters{display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap}
+.dchip{font-family:'Inter';font-weight:700;font-size:.8rem;color:var(--sub);background:var(--panel2);border:1.5px solid var(--line);border-radius:9px;padding:7px 13px;cursor:pointer;transition:color .15s,border-color .15s,background .15s}
+.dchip:hover{border-color:rgba(45,212,191,.4)}
+.dchip.active{color:var(--teal);border-color:var(--teal);background:rgba(45,212,191,.1)}
+.drill-input-row{display:flex;align-items:center;gap:8px;margin:14px 0 4px}
+.drill-dollar{font-size:1.4rem;font-weight:800;color:var(--sub)}
+.drill-input{flex:1;font-family:'Inter';font-weight:700;font-size:1.15rem;color:var(--text);background:#0F1522;border:1.5px solid var(--line);border-radius:10px;padding:12px 15px}
+.drill-input:focus{outline:none;border-color:var(--accent)}
+.drill-input.ok{border-color:var(--green);color:var(--greenL)}
+.drill-input.bad{border-color:var(--red);color:var(--redL)}
+.hint-box{background:rgba(91,141,239,.08);border:1px solid rgba(91,141,239,.22);border-radius:10px;padding:11px 14px;margin-top:10px;font-weight:700;color:#fff;text-align:center}
+.drill-count{display:inline-flex;align-items:center;gap:5px;font-weight:800;color:var(--teal)}
+
 /* complete */
 .complete{text-align:center;padding:40px 0}
 .complete .check{width:76px;height:76px;border-radius:50%;background:linear-gradient(135deg,var(--green),var(--accent));display:flex;align-items:center;justify-content:center;font-size:2.4rem;margin:0 auto 18px;color:#fff}
@@ -1595,7 +1609,7 @@ function loadState(){
   try{ return JSON.parse(localStorage.getItem(SAVE_KEY))||defaultState(); }
   catch{ return defaultState(); }
 }
-function defaultState(){ return {xp:0, streak:1, progress:{}, completed:{}}; }
+function defaultState(){ return {xp:0, streak:1, progress:{}, completed:{}, drillSolved:0}; }
 function persist(){ localStorage.setItem(SAVE_KEY, JSON.stringify(S)); }
 
 let view={screen:'home', track:null, step:0, answered:false, sel:null, dstage:0, dstageDone:[],
@@ -1609,6 +1623,7 @@ function render(){
   if(view.screen==='home') renderHome();
   else if(view.screen==='step') renderStep();
   else if(view.screen==='complete') renderComplete();
+  else if(view.screen==='drill') renderDrill();
 }
 function topbar(){
   return `<div class="topbar">
@@ -1665,6 +1680,16 @@ function renderHome(){
       <div class="stat"><div class="big">${doneSteps}/${totalSteps}</div><div class="lbl">Steps done</div></div>
       <div class="stat"><div class="big">${tracksDone}/6</div><div class="lbl">Tracks complete</div></div>
       <div class="stat"><div class="big">${S.xp}</div><div class="lbl">Total XP</div></div>
+    </div>
+    <div class="sec-label">Practice</div>
+    <div class="track-card" onclick="openDrill()" style="border-color:rgba(45,212,191,.3)">
+      <div class="track-num" style="background:rgba(45,212,191,.12);color:var(--teal)">🎯</div>
+      <div class="track-info">
+        <div class="track-name">TVM Drill Sandbox <span class="pill" style="background:rgba(45,212,191,.15);color:var(--teal)">Endless</span></div>
+        <div class="track-desc">Fresh Time-Value-of-Money word problems, generated on the spot. Solve, check, repeat — build the reflex.</div>
+        <div class="track-meta">Solved: ${S.drillSolved||0}</div>
+      </div>
+      <div class="track-arrow">›</div>
     </div>
     <div class="sec-label">Your Curriculum</div>
     <div class="track-grid">${liveCard}${roadCards}</div>
@@ -1967,7 +1992,8 @@ function renderComplete(){
       <div class="reward">⚡ +${t.steps.length*15} XP earned</div>
       <p style="font-size:.85rem;margin-top:10px">Total XP: ${S.xp}</p>
       <p style="font-size:.85rem;color:var(--dim);max-width:420px;margin:14px auto 0">Run it again anytime before Exercise 1 (Aug 22). The goal: the decision tree becomes automatic.</p>
-      <div class="nav-row" style="max-width:340px;margin:24px auto 0">
+      <div class="nav-row" style="max-width:340px;margin:24px auto 0;flex-direction:column">
+        ${t.id==='tvm'?`<button class="btn btn-green btn-block" onclick="openDrill()">🎯 Drill this track →</button>`:''}
         <button class="btn btn-primary btn-block" onclick="goHome()">Back to Tracks →</button>
       </div>
     </div>
@@ -2010,6 +2036,127 @@ function goStep(i){ const t=TRACKS[view.track]; if(i<0||i>=t.steps.length||i===v
 function skipNext(){ const t=TRACKS[view.track]; if(view.step+1<t.steps.length){ view.step++; resetStepFlags(); renderStep(); window.scrollTo(0,0);} }
 function bumpXP(n){ S.xp+=n; persist();
   document.querySelectorAll('.xp-pill').forEach(e=>e.innerHTML='⚡ '+S.xp+' XP');
+}
+
+/* ════════════════════════════════════════════════════
+   TVM DRILL SANDBOX — endless generated problems
+════════════════════════════════════════════════════ */
+function fmtMoney(x){ return '$'+Number(x).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}); }
+function fmtN(x,d){ return Number(x).toLocaleString('en-US',{minimumFractionDigits:d,maximumFractionDigits:d}); }
+function parseNum(s){ return parseFloat(String(s).replace(/[$,\s]/g,'')); }
+
+const DRILL_POOLS={
+  mixed:['fvLump','pvLump','pvAnn','fvAnn','pmt','perp','gperp'],
+  lump:['fvLump','pvLump'],
+  annuity:['pvAnn','fvAnn','pmt'],
+  perp:['perp','gperp']
+};
+function genDrill(filter){
+  const R=(a,b)=>a+Math.floor(Math.random()*(b-a+1));
+  const pick=a=>a[Math.floor(Math.random()*a.length)];
+  const type=pick(DRILL_POOLS[filter]||DRILL_POOLS.mixed);
+  let r=R(3,12), t=R(3,30); const rd=r/100;
+  const fac=Math.pow(1+rd,t);
+
+  if(type==='fvLump'){
+    const PV=R(1,100)*1000, ans=PV*fac;
+    return {type, label:'Future value · lump sum', formula:'FV = PV × (1 + r)ᵗ', ans,
+      prompt:`You deposit <b>${fmtMoney(PV)}</b> today at <b>${r}%</b> per year. What will it be worth in <b>${t} years</b>?`,
+      steps:[{f:'(1 + r)ᵗ', c:`(1 + ${rd.toFixed(2)})^${t}`, r:fmtN(fac,4)},
+             {f:'FV = PV × (1+r)ᵗ', c:`${fmtMoney(PV)} × ${fmtN(fac,4)}`, r:fmtMoney(ans)}]};
+  }
+  if(type==='pvLump'){
+    const FV=R(2,100)*1000, ans=FV/fac;
+    return {type, label:'Present value · lump sum', formula:'PV = FV / (1 + r)ᵗ', ans,
+      prompt:`You'll receive <b>${fmtMoney(FV)}</b> in <b>${t} years</b>. At a <b>${r}%</b> discount rate, what is it worth today?`,
+      steps:[{f:'(1 + r)ᵗ', c:`(1 + ${rd.toFixed(2)})^${t}`, r:fmtN(fac,4)},
+             {f:'PV = FV / (1+r)ᵗ', c:`${fmtMoney(FV)} / ${fmtN(fac,4)}`, r:fmtMoney(ans)}]};
+  }
+  if(type==='pvAnn'){
+    const C=R(1,40)*500, af=(1-Math.pow(1+rd,-t))/rd, ans=C*af;
+    return {type, label:'Present value · annuity', formula:'PV = (C / r) × [1 − 1/(1 + r)ᵗ]', ans,
+      prompt:`An investment pays <b>${fmtMoney(C)}</b> at the end of every year for <b>${t} years</b>. At <b>${r}%</b>, what is it worth today?`,
+      steps:[{f:'factor = [1 − 1/(1+r)ᵗ]/r', c:`[1 − 1/${fmtN(fac,4)}] / ${rd.toFixed(2)}`, r:fmtN(af,4)},
+             {f:'PV = C × factor', c:`${fmtMoney(C)} × ${fmtN(af,4)}`, r:fmtMoney(ans)}]};
+  }
+  if(type==='fvAnn'){
+    const C=R(1,40)*500, af=(fac-1)/rd, ans=C*af;
+    return {type, label:'Future value · annuity', formula:'FV = C × [((1 + r)ᵗ − 1) / r]', ans,
+      prompt:`You save <b>${fmtMoney(C)}</b> at the end of each year for <b>${t} years</b> earning <b>${r}%</b>. How much will you have at the end?`,
+      steps:[{f:'factor = [(1+r)ᵗ − 1]/r', c:`[${fmtN(fac,4)} − 1] / ${rd.toFixed(2)}`, r:fmtN(af,4)},
+             {f:'FV = C × factor', c:`${fmtMoney(C)} × ${fmtN(af,4)}`, r:fmtMoney(ans)}]};
+  }
+  if(type==='pmt'){
+    const rp=R(3,10), rpd=rp/100, tp=R(5,30), PV=R(20,400)*1000;
+    const af=(1-Math.pow(1+rpd,-tp))/rpd, ans=PV/af;
+    return {type, label:'Payment · solve for C', formula:'C = PV × r / [1 − 1/(1 + r)ᵗ]', ans,
+      prompt:`You borrow <b>${fmtMoney(PV)}</b> at <b>${rp}%</b> and repay it in equal annual payments over <b>${tp} years</b>. What is each payment?`,
+      steps:[{f:'factor = [1 − 1/(1+r)ᵗ]/r', c:`[1 − 1/${fmtN(Math.pow(1+rpd,tp),4)}] / ${rpd.toFixed(2)}`, r:fmtN(af,4)},
+             {f:'C = PV / factor', c:`${fmtMoney(PV)} / ${fmtN(af,4)}`, r:fmtMoney(ans)}]};
+  }
+  if(type==='perp'){
+    const rp=R(3,10), rpd=rp/100, C=R(1,50)*1000, ans=C/rpd;
+    return {type, label:'Level perpetuity', formula:'PV = C / r', ans,
+      prompt:`An endowment must pay <b>${fmtMoney(C)}</b> every year <b>forever</b>, earning <b>${rp}%</b>. How large must it be today?`,
+      steps:[{f:'PV = C / r', c:`${fmtMoney(C)} / ${rpd.toFixed(2)}`, r:fmtMoney(ans)}]};
+  }
+  // gperp
+  const rp=R(6,12), rpd=rp/100, g=R(1,rp-3), gd=g/100, C=R(50,400)*1000, ans=C/(rpd-gd);
+  return {type, label:'Growing perpetuity', formula:'PV = C / (r − g)', ans,
+    prompt:`A scholarship pays <b>${fmtMoney(C)}</b> next year and grows <b>${g}%</b> every year <b>forever</b>. At a <b>${rp}%</b> return, how large must the gift be today?`,
+    steps:[{f:'r − g', c:`${rpd.toFixed(2)} − ${gd.toFixed(2)}`, r:(rpd-gd).toFixed(2)},
+           {f:'PV = C / (r − g)', c:`${fmtMoney(C)} / ${(rpd-gd).toFixed(2)}`, r:fmtMoney(ans)}]};
+}
+
+function openDrill(){ view.screen='drill'; view.drill={filter:'mixed', problem:genDrill('mixed'), scored:false}; render(); window.scrollTo(0,0); }
+function setDrillFilter(k){ view.drill.filter=k; newDrill(); }
+function newDrill(){ view.drill.problem=genDrill(view.drill.filter); view.drill.scored=false; renderDrill(); window.scrollTo(0,0); }
+function toggleHint(){ const b=document.getElementById('hintBox'), btn=document.getElementById('hintBtn'); const show=b.style.display==='none'; b.style.display=show?'block':'none'; btn.textContent=show?'Hide formula hint':'Show formula hint'; }
+function drillStepsHTML(p){
+  const steps=p.steps.map((s,i)=>`<div class="sstep" style="animation-delay:${i*0.15}s"><div class="sn">Step ${i+1}</div><div class="sf">${s.f}</div><div class="sc">${s.c} &nbsp;<span class="sr">= ${s.r}</span></div></div>`).join('');
+  return `<div class="solve-formula" style="margin-top:14px"><div class="sfl">Formula</div><div class="formula">${p.formula}</div></div><div class="solve">${steps}</div>`;
+}
+function checkDrill(){
+  const dr=view.drill, el=document.getElementById('drillAns'), fb=document.getElementById('drillFb');
+  const val=parseNum(el.value);
+  if(!isFinite(val)){ fb.className='feedback show no'; fb.innerHTML='Enter a number first.'; return; }
+  const ans=dr.problem.ans, ok=Math.abs(val-ans)<=Math.max(1,Math.abs(ans)*0.01);
+  fb.className='feedback show '+(ok?'ok':'no');
+  fb.innerHTML=ok?`✓ Correct! The answer is <b>${fmtMoney(ans)}</b>.`
+                 :`✗ Not quite — you entered ${fmtMoney(val)}. The answer is <b>${fmtMoney(ans)}</b>. Walk the steps below.`;
+  el.classList.remove('ok','bad'); el.classList.add(ok?'ok':'bad');
+  document.getElementById('drillSolve').innerHTML=drillStepsHTML(dr.problem);
+  document.getElementById('drillCheck').disabled=true;
+  if(ok && !dr.scored){ dr.scored=true; S.drillSolved=(S.drillSolved||0)+1; persist(); bumpXP(5);
+    const c=document.getElementById('drillCount'); if(c) c.textContent=S.drillSolved; }
+}
+function renderDrill(){
+  const dr=view.drill;
+  const filters=[['mixed','Mixed'],['lump','Lump sum'],['annuity','Annuity'],['perp','Perpetuity']];
+  app().innerHTML=topbar()+`<div class="wrap fade">
+    <div class="lesson-top">
+      <button class="btn btn-ghost btn-sm" onclick="goHome()">← Tracks</button>
+      <div class="crumbs">🎯 <b>TVM Drill</b> · Solved <span class="drill-count" id="drillCount">${S.drillSolved||0}</span></div>
+    </div>
+    <div class="drill-filters">${filters.map(([k,l])=>`<button class="dchip ${dr.filter===k?'active':''}" onclick="setDrillFilter('${k}')">${l}</button>`).join('')}</div>
+    <div class="card">
+      <div class="ref-tag" style="color:var(--teal);background:rgba(45,212,191,.12)">${dr.problem.label}</div>
+      <div class="scenario" style="margin:6px 0 2px">${dr.problem.prompt}</div>
+      <div class="stage-help" style="margin-top:12px">Read it, spot the type, pick the formula, solve. Answer to the nearest dollar is fine.</div>
+      <div class="drill-input-row"><span class="drill-dollar">$</span>
+        <input id="drillAns" class="drill-input" placeholder="your answer" inputmode="decimal" autocomplete="off" onkeydown="if(event.key==='Enter')checkDrill()"></div>
+      <button class="btn btn-ghost btn-sm" id="hintBtn" onclick="toggleHint()">Show formula hint</button>
+      <div id="hintBox" class="hint-box" style="display:none">${dr.problem.formula}</div>
+      <div class="feedback" id="drillFb"></div>
+      <div id="drillSolve"></div>
+      <div class="nav-row">
+        <button class="btn btn-green" style="flex:1" id="drillCheck" onclick="checkDrill()">Check</button>
+        <button class="btn btn-primary" style="flex:1" onclick="newDrill()">New problem →</button>
+      </div>
+    </div>
+    <p class="footer-note">Endless Time-Value-of-Money problems, generated fresh each time. +5 XP per solve.</p>
+  </div>`;
+  requestAnimationFrame(()=>{ const el=document.getElementById('drillAns'); if(el) el.focus(); });
 }
 
 /* ════════════════════════════════════════════════════
