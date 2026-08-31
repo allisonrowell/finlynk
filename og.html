@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{width:1200px;height:630px;overflow:hidden}
+body{
+  font-family:-apple-system,'Helvetica Neue',Arial,sans-serif;
+  background:
+    radial-gradient(1100px 500px at 82% 12%, rgba(38,166,154,.16), transparent 60%),
+    radial-gradient(900px 500px at 12% 92%, rgba(91,141,239,.18), transparent 60%),
+    #0A0E17;
+  color:#E8ECF5; width:1200px; height:630px; position:relative;
+  padding:64px 72px; display:flex; flex-direction:column; justify-content:space-between;
+}
+.brand{display:flex;align-items:center;gap:16px}
+.logo{width:64px;height:64px;border-radius:16px;background:linear-gradient(135deg,#26A69A,#5B8DEF);
+  display:flex;align-items:center;justify-content:center;font-size:36px;font-weight:900;color:#fff;
+  box-shadow:0 10px 30px rgba(38,166,154,.35)}
+.name{font-size:34px;font-weight:800;letter-spacing:-.5px}
+.name .x{color:#5B8DEF}
+.kicker{font-size:19px;font-weight:800;letter-spacing:3px;text-transform:uppercase;color:#5B8DEF;margin-bottom:14px}
+h1{font-size:82px;font-weight:900;letter-spacing:-2.5px;line-height:1.02}
+.sub{font-size:27px;color:#9aa5b8;margin-top:22px;max-width:960px;line-height:1.4}
+.sub b{color:#E8ECF5}
+.pills{display:flex;gap:12px;flex-wrap:wrap;margin-top:8px}
+.pill{font-size:20px;font-weight:700;color:#cdd5e3;background:rgba(255,255,255,.05);
+  border:1.5px solid rgba(255,255,255,.09);border-radius:11px;padding:9px 17px}
+.pill.on{color:#4DD0C4;border-color:rgba(38,166,154,.45);background:rgba(38,166,154,.1)}
+.foot{display:flex;align-items:center;justify-content:space-between}
+.url{font-size:30px;font-weight:900;color:#fff}
+.url .d{color:#5B8DEF}
+.tag{font-size:19px;color:#8B95A8;font-weight:600;text-align:right;line-height:1.4}
+.tag b{color:#F5B82E}
+</style>
+</head>
+<body>
+  <div class="brand">
+    <div class="logo">$</div>
+    <div class="name">Fin<span class="x">LYNK</span></div>
+  </div>
+
+  <div>
+    <div class="kicker">MBA Finance · Study Tool</div>
+    <h1>Stop guessing what<br>to plug in.</h1>
+    <div class="sub">Read a finance word problem → <b>tag the numbers</b> → <b>pick the formula</b> → solve it step by step. Plus endless practice, a built-in calculator, and hints.</div>
+  </div>
+
+  <div class="pills">
+    <span class="pill on">Time Value</span>
+    <span class="pill on">NPV / IRR</span>
+    <span class="pill on">Bonds</span>
+    <span class="pill on">Stocks</span>
+    <span class="pill on">WACC</span>
+    <span class="pill on">EVA / DCF</span>
+  </div>
+
+  <div class="foot">
+    <div class="url">mba-finlynk<span class="d">.netlify.app</span></div>
+    <div class="tag"><b>Free</b> · no login · works on mobile<br>6 tracks · endless drills</div>
+  </div>
+</body>
+</html>
