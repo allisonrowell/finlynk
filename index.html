@@ -316,7 +316,7 @@ body{
 <script>
 /* ════════════════════════════════════════════════════
    FinLYNK — Time Value of Money Decoder
-   Content built for IMBA 6071 Financial Management — Exercise 1 topics.
+   Content: core MBA corporate-finance topics (time value of money).
    Single-file, no build, no backend. Progress in localStorage.
 ════════════════════════════════════════════════════ */
 const SAVE_KEY='finlynk_v1';
@@ -392,13 +392,13 @@ function numMatch(input, accepts){
 const TRACKS=[
 {
   id:'tvm', name:'Time Value of Money', icon:'⏳', color:'#26A69A',
-  desc:'The whole foundation of Exercise 1 — and the skill of turning a word problem into the right formula.',
+  desc:'The foundation of corporate finance — and the skill of turning a word problem into the right formula.',
   steps:[
     /* ---- 1. intuition lesson ---- */
     {type:'lesson', title:'A dollar today ≠ a dollar later',
      lead:'This one idea drives all of corporate finance.',
      body:`<p>Money has a <b>time value</b>: a dollar in your hand today is worth more than a dollar promised next year, because today's dollar can be invested and grow.</p>
-     <p>Every Exercise-1 problem is really the same question in disguise: <b>move money across time</b> so you can compare amounts fairly. You either push money <b>forward</b> in time (compounding → a Future Value) or pull it <b>back</b> to today (discounting → a Present Value).</p>`,
+     <p>Every time-value problem is really the same question in disguise: <b>move money across time</b> so you can compare amounts fairly. You either push money <b>forward</b> in time (compounding → a Future Value) or pull it <b>back</b> to today (discounting → a Present Value).</p>`,
      concept:{t:'The trap the pros warn about', body:`<p>Adding up dollars from different years — like a "$4.755M contract" that pays out over 25 years — is a unit error. Year-1 dollars and year-25 dollars aren't the same unit. You must discount them to a common date first.</p>`, warn:true}
     },
     /* ---- 2. the five variables ---- */
@@ -438,7 +438,7 @@ const TRACKS=[
      exp:'"Every year forever" = a perpetuity. Its present value is simply C / r. No t appears because it never ends.'},
 
     /* ---- 6. DECODE #1 — lump sum PV ---- */
-    {type:'decode', title:'Decode: the year-25 payment', ref:'Ex 1 · Problem 1(b)',
+    {type:'decode', title:'Decode: the year-25 payment', ref:'Time Value · lump sum',
      scenario:`A minor-league pitcher's contract pays him <span class="num">$210,000</span> at the end of <span class="num">year 25</span>. The team discounts cash flows at <span class="num">12%</span>.`,
      ask:`What is that single year-25 payment worth <span class="qk">today</span>?`,
      roles:['PV','FV','r','t'],
@@ -469,7 +469,7 @@ const TRACKS=[
      meaning:'A $210,000 payment 25 years out is worth only about $12,400 today. Discounting at 12% strips away ~94% of its face value — that\'s how powerful time and rate are over long horizons.'},
 
     /* ---- 7. DECODE #2 — annuity PV ---- */
-    {type:'decode', title:'Decode: four years of payments', ref:'Ex 1 · Problem 2 (Offer C)',
+    {type:'decode', title:'Decode: four years of payments', ref:'Time Value · annuity',
      scenario:`A buyer offers you <span class="num">$300,000</span> at the end of each year for the next <span class="num">4</span> years. Your opportunity cost of capital is <span class="num">7%</span>.`,
      ask:`What is that stream of payments worth <span class="qk">today</span>?`,
      roles:['PV','C','r','t'],
@@ -502,7 +502,7 @@ const TRACKS=[
      meaning:'The four $300k payments total $1.2M on paper, but they\'re worth about $1.016M today. In the real problem you\'d add the $400k paid up front to get Offer C\'s full value of $1,416,163 — which is why it beats a $1.25M cash offer.'},
 
     /* ---- 8. DECODE #3 — solve for payment (mortgage) ---- */
-    {type:'decode', title:'Decode: the mortgage payment', ref:'Ex 1 · Problem 3(b)',
+    {type:'decode', title:'Decode: the mortgage payment', ref:'Time Value · mortgage',
      scenario:`You finance <span class="num">$446,250</span> with a <span class="num">30</span>-year fixed mortgage at an annual rate of <span class="num">5.4%</span>, paid <span class="num">monthly</span>.`,
      ask:`What is the <span class="qk">monthly payment</span>?`,
      roles:['PV','C','r','t'],
@@ -537,7 +537,7 @@ const TRACKS=[
      meaning:'The monthly payment is about $2,506. Notice the trick was never the formula — it was converting the annual 5.4% and 30 years into a monthly 0.45% and 360 periods before plugging in.'},
 
     /* ---- 9. DECODE #4 — perpetuity + growing ---- */
-    {type:'decode', title:'Decode: the endowment', ref:'Ex 1 · Problem 5(a & b)',
+    {type:'decode', title:'Decode: the endowment', ref:'Time Value · perpetuity',
      scenario:`A donor wants a scholarship that pays <span class="num">$250,000</span> every year <span class="num">forever</span>, first payment in one year. The endowment earns <span class="num">6.5%</span> per year.`,
      ask:`How large must the gift be <span class="qk">today</span>?`,
      roles:['C','r','g'],
@@ -566,7 +566,7 @@ const TRACKS=[
      meaning:'It takes ~$3.85M today to fund $250k a year forever at 6.5%. In part (b), if the award must grow 2.5%/yr, you switch to the growing perpetuity C/(r−g) = 250,000/0.04 = $6,250,000 — growth makes a perpetual promise dramatically more expensive.'},
 
     /* ---- 10. wrap quiz ---- */
-    {type:'quiz', q:'The real skill Exercise 1 tests is…',
+    {type:'quiz', q:'The real skill these problems test is…',
      opts:['Memorizing formulas perfectly','Reading the word problem, tagging each number, and picking the matching formula','Doing arithmetic fast in your head','Using Excel functions only'],
      answer:1,
      exp:'The formulas are on the sheet. Points are won by decoding the words into roles and choosing the right tool — exactly the loop you just practiced. Keep drilling these until the decision tree is automatic.'},
@@ -582,7 +582,7 @@ const TRACKS=[
      body:`<p><b>Net Present Value (NPV)</b> compares what a project is worth today against what it costs you:</p>
      <p style="text-align:center;font-weight:800;color:#fff">NPV = (present value of all future cash flows) − (what you invest today)</p>
      <p>Every future dollar is discounted back to today first (that's all of Track 1), then netted against the up-front cost.</p>`,
-     concept:{t:'The decision rule — memorize this', body:`<p><b>NPV &gt; 0 → accept</b> the project (it adds value). <b>NPV &lt; 0 → reject</b> it. That's the entire point of the exercise: a yes/no backed by a number.</p>`}
+     concept:{t:'The decision rule — memorize this', body:`<p><b>NPV &gt; 0 → accept</b> the project (it adds value). <b>NPV &lt; 0 → reject</b> it. That's the entire point: a yes/no backed by a number.</p>`}
     },
     /* ---- 2. the timeline ---- */
     {type:'lesson', title:'Build the cash-flow timeline',
@@ -1696,7 +1696,7 @@ function renderHome(){
 
   app().innerHTML=topbar()+`<div class="wrap fade">
     <div class="hero">
-      <div class="kicker">IMBA 6071 · Financial Management</div>
+      <div class="kicker">MBA Finance · Study Tool</div>
       <h1>Stop guessing what<br>to plug in.</h1>
       <p>Read a finance word problem, tag every number with its role, pick the right formula, and solve it step by step — until the decision becomes automatic.</p>
     </div>
@@ -1718,7 +1718,7 @@ function renderHome(){
     <div class="sec-label">Your Curriculum</div>
     <div class="track-grid">${liveCard}${roadCards}</div>
     <div class="notice"><b>Study tool.</b> Practice reading each problem, tagging the numbers, and choosing the formula until it becomes automatic — then do the real work yourself.</div>
-    <p class="footer-note">FinLYNK · a study companion for Financial Management · not affiliated with Georgia Tech or Scheller.</p>
+    <p class="footer-note">FinLYNK · a study companion for MBA corporate finance.</p>
   </div>`;
 }
 
@@ -2012,10 +2012,10 @@ function renderComplete(){
     <div class="complete">
       <div class="check">✓</div>
       <h2>${t.name} complete!</h2>
-      <p>You worked all ${t.steps.length} steps — including ${t.steps.filter(s=>s.type==='decode').length} full decoders from real Exercise-1 problems.</p>
+      <p>You worked all ${t.steps.length} steps — including ${t.steps.filter(s=>s.type==='decode').length} full decoders on real finance problems.</p>
       <div class="reward">⚡ +${t.steps.length*15} XP earned</div>
       <p style="font-size:.85rem;margin-top:10px">Total XP: ${S.xp}</p>
-      <p style="font-size:.85rem;color:var(--dim);max-width:420px;margin:14px auto 0">Run it again anytime before Exercise 1 (Aug 22). The goal: the decision tree becomes automatic.</p>
+      <p style="font-size:.85rem;color:var(--dim);max-width:420px;margin:14px auto 0">Run it again anytime. The goal: the decision tree becomes automatic.</p>
       <div class="nav-row" style="max-width:340px;margin:24px auto 0;flex-direction:column">
         ${DRILLS[t.id]?`<button class="btn btn-green btn-block" onclick="openDrill('${t.id}')">🎯 Drill this track →</button>`:''}
         <button class="btn btn-primary btn-block" onclick="goHome()">Back to Tracks →</button>

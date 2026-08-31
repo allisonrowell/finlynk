@@ -1,6 +1,6 @@
 # FinLYNK — Decode the Finance Word Problem
 
-A gamified, self-paced study companion for **IMBA 6071 Financial Management**. Built for the one thing that trips students up most: **figuring out what to plug into which formula when reading a word problem.**
+A gamified, self-paced study companion for **MBA-level corporate finance**. Built for the one thing that trips students up most: **figuring out what to plug into which formula when reading a word problem.**
 
 Same engine model as [chartlynk](https://github.com/allisonrowell/chartlynk) — a single self-contained `index.html`, no build step, no backend, progress saved in the browser (localStorage), XP + streak + progress bars.
 
@@ -18,14 +18,13 @@ Every problem is worked as a game with five stages, earning XP at each:
 
 ## Curriculum
 
-**Track 1 — Time Value of Money** (live): the intuition, the five variables, the **Decoder Method** decision tree, quizzes, and 4 full decoders built from real Exercise-1 problems (deferred payment, annuity, mortgage payment, endowment/perpetuity).
-
-Roadmap (from the same course materials + past practice exams):
-2. Capital Budgeting — NPV & IRR (Ch. 5–6)
-3. Interest Rates & Bond Pricing (Ch. 8)
-4. Stock Valuation / DDM (Ch. 9)
-5. Risk, Return & Cost of Capital — WACC (Ch. 10–13)
-6. Integrative — EVA / MVA (Ch. 9, 13, 14)
+Six tracks covering a full MBA corporate-finance course, each with lessons, quizzes, decoders, and an endless generated Drill Sandbox:
+1. Time Value of Money
+2. Capital Budgeting — NPV & IRR
+3. Interest Rates & Bond Pricing
+4. Stock Valuation / DDM
+5. Risk, Return & Cost of Capital — WACC
+6. Integrative — Valuation, EVA & MVA
 
 ## Run locally
 
@@ -45,4 +44,4 @@ All content lives in the `TRACKS` array near the top of the `<script>` in `index
 
 ---
 
-FinLYNK is an independent study aid, not affiliated with or endorsed by Georgia Tech or the Scheller College of Business.
+FinLYNK is an independent study aid for MBA corporate finance, not affiliated with any university or course.
